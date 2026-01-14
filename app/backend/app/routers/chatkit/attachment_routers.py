@@ -5,12 +5,18 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import  StreamingResponse, FileResponse
 from starlette.responses import JSONResponse
 from dependency_injector.wiring import Provide, inject
+from app.config.settings import settings
 
 # Foundry Agent based dependencies
 #from app.config.container_foundry import Container
 
 # Azure Chat based agents dependencies
 from app.config.container_azure_chat import Container
+
+if settings.AGENTS_TYPE == "azure_chat":
+    from app.config.container_azure_chat import Container
+elif settings.AGENTS_TYPE == "foundry_v2":
+    from app.config.container_foundry_v2 import Container
 
 from app.helpers.blob_proxy import BlobStorageProxy
 from .sqllite_store import SQLiteStore

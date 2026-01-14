@@ -46,19 +46,28 @@ class Settings(BaseSettings):
     """
 
     # app-level
-    APP_NAME: str = "Copilot Multi Agent Chat API"
+    APP_NAME: str = "Home Banking Multi-Agent Assistant"
     PROFILE: str = Field(default="prod")
+    AGENTS_TYPE: str = Field(default="foundry_v2")  # options: azure_chat, foundry_v1, foundry_v2
 
     #Logging and monitoring
     APPLICATIONINSIGHTS_CONNECTION_STRING: str | None = Field(default=None)
     ENABLE_OTEL : bool = Field(default=True)
   
-    # Azure AI Foundry configuration
+    
     # maps to environment variables described by the user
 
     AZURE_DOCUMENT_INTELLIGENCE_SERVICE: str | None = Field(default=None)
+    
+    # Azure AI Foundry v1 configuration
     FOUNDRY_PROJECT_ENDPOINT: str | None = Field(default=None)
     FOUNDRY_MODEL_DEPLOYMENT_NAME: str = Field(default="gpt-4o")
+    
+    # Azure AI Foundry v2 configuration
+    AZURE_AI_PROJECT_ENDPOINT: str | None = Field(default=None)
+    AZURE_AI_MODEL_DEPLOYMENT_NAME: str = Field(default="gpt-4.1")
+
+    #Azure OpenAI Chat configuration
     AZURE_OPENAI_ENDPOINT: str | None = Field(default=None)
     AZURE_OPENAI_CHAT_DEPLOYMENT_NAME: str = Field(default="gpt-4o")
 

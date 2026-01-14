@@ -57,7 +57,7 @@
             },
             "jinja": true,
             "cwd": "${workspaceFolder}/app/backend",
-            "justMyCode": true
+            "justMyCode": false
 
         },
         {

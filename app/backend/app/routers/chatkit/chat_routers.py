@@ -2,15 +2,23 @@ from typing import Any, AsyncIterator
 from fastapi import APIRouter, Request,Depends
 from dependency_injector.wiring import Provide, inject
 from fastapi.responses import Response, StreamingResponse
+from app.config.settings import settings
 
 from chatkit.types import (
     ErrorEvent
 
 )
 
-from app.agents.azure_chat.handoff.chatkit.handoff_orchestrator_chatkit import HandoffOrchestrator
+if settings.AGENTS_TYPE == "azure_chat":
+    from app.agents.azure_chat.handoff.chatkit.handoff_orchestrator_chatkit import HandoffOrchestrator
+    from app.config.container_azure_chat import Container
+elif settings.AGENTS_TYPE == "foundry_v2":
+    from app.agents.foundry_v2.handoff_orchestrator_chatkit import HandoffOrchestrator
+    from app.config.container_foundry_v2 import Container
+else:
+    raise ValueError(f"Unsupported AGENTS_TYPE: {settings.AGENTS_TYPE}")
+
 from app.routers.chatkit.chatkit_server import BankingAssistantChatKitServer
-from app.config.container_azure_chat import Container
 
 import logging
 

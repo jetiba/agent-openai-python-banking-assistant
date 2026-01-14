@@ -7,6 +7,7 @@ from chatkit.actions import Action
 from chatkit.server import ChatKitServer,agents_sdk_user_agent_override
 from chatkit.errors import CustomStreamError, StreamError, ErrorCode
 from agent_framework.observability import get_tracer
+from app.config.settings import settings
 
 
 from chatkit.types import (
@@ -37,9 +38,17 @@ from chatkit.types import (
 from chatkit.widgets import Card
 
 from app.agents.azure_chat.handoff.chatkit.handoff_orchestrator_chatkit import HandoffOrchestrator
-from app.agents.azure_chat.handoff.chatkit._chatkit_events_handler import ChatKitEventsHandler
+
+
+if settings.AGENTS_TYPE == "azure_chat":
+    from app.agents.azure_chat.handoff.chatkit.handoff_orchestrator_chatkit import HandoffOrchestrator
+    from app.agents.azure_chat.handoff.chatkit._chatkit_events_handler import ChatKitEventsHandler
+elif settings.AGENTS_TYPE == "foundry_v2":
+    from app.agents.foundry_v2.handoff_orchestrator_chatkit import HandoffOrchestrator
+    from app.agents.foundry_v2._chatkit_events_handler import ChatKitEventsHandler
+else:
+    raise ValueError(f"Unsupported AGENTS_TYPE: {settings.AGENTS_TYPE}")
 from app.common.chatkit.types import ClientWidgetItem, CustomThreadItemDoneEvent
-from app.config.container_azure_chat import Container
 
 from .attachement_store import AttachmentMetadataStore
 

@@ -2,10 +2,10 @@ from typing import Any, AsyncGenerator
 from collections.abc import AsyncIterable
 from agent_framework import AgentRunResponseUpdate, AgentRunUpdateEvent, ChatAgent, FunctionApprovalRequestContent, FunctionCallContent,HandoffBuilder,InMemoryCheckpointStorage, RequestInfoEvent, TextContent,WorkflowCheckpoint, WorkflowEvent, HandoffUserInputRequest, FunctionApprovalResponseContent
 from agent_framework.exceptions import AgentThreadException
-from agent_framework.azure import AzureOpenAIChatClient
-from app.agents.azure_chat.handoff.chatkit.account_agent_chatkit import AccountAgent
-from app.agents.azure_chat.handoff.chatkit.transaction_agent_chatkit import TransactionHistoryAgent
-from app.agents.azure_chat.handoff.chatkit.payment_agent_chatkit import PaymentAgent
+from agent_framework.azure import AzureAIClient
+from app.agents.foundry_v2.account_agent_chatkit import AccountAgent
+from app.agents.foundry_v2.transaction_agent_chatkit import TransactionHistoryAgent
+from app.agents.foundry_v2.payment_agent_chatkit import PaymentAgent
 from uuid import uuid4
 import logging
 
@@ -36,12 +36,12 @@ class HandoffOrchestrator:
     checkpoint_storage = InMemoryCheckpointStorage()
 
     def __init__(self, 
-                 azure_chat_client: AzureOpenAIChatClient,
+                 azure_ai_client: AzureAIClient,
                  account_agent: AccountAgent,
                  transaction_agent: TransactionHistoryAgent,
                  payment_agent: PaymentAgent
                                 ):
-      self.azure_chat_client = azure_chat_client
+      self.azure_ai_client = azure_ai_client
       self.account_agent = account_agent
       self.transaction_agent = transaction_agent
       self.payment_agent = payment_agent
@@ -50,9 +50,9 @@ class HandoffOrchestrator:
     async def initialize(self):
       """Initialize the workflow with async operations"""
       triage_agent = ChatAgent(
-            chat_client=self.azure_chat_client,
+            chat_client=self.azure_ai_client,
             instructions=HandoffOrchestrator.triage_instructions,
-            name="triage_agent"
+            name="TriageAgent"
         )
       
       self.workflow = (

@@ -4,7 +4,7 @@ from app.routers.chatkit import attachment_routers
 from app.routers.chatkit import chat_routers
 from app.config.settings import settings
 from app.config.logging import get_logger, setup_logging
-from agent_framework.observability import setup_observability
+#from agent_framework.observability import setup_observability
 # Foundry based dependency injection container
 #from app.config.container_foundry import Container
 
@@ -12,6 +12,12 @@ from agent_framework.observability import setup_observability
 from app.config.container_azure_chat import Container
 
 
+if settings.AGENTS_TYPE == "azure_chat":
+    from app.config.container_azure_chat import Container
+elif settings.AGENTS_TYPE == "foundry_v2":
+    from app.config.container_foundry_v2 import Container
+else:
+    raise ValueError(f"Unsupported AGENTS_TYPE: {settings.AGENTS_TYPE}")
 
 def create_app() -> FastAPI:
     # Initialize logging for the app
@@ -20,8 +26,8 @@ def create_app() -> FastAPI:
     logger = get_logger(__name__)
 
     # Setup agent framework observability
-    #commenting out for now due to incompatibility between agent-framework 1.0.0b251120 and opentelemetry-sdk 1.39
-    setup_observability(enable_sensitive_data=settings.ENABLE_OTEL,applicationinsights_connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING)
+    #commenting out for now due to observability api changes in agent-framework 1.0.0b260107. this should be replaced with configure  configure_otel_providers()
+    #setup_observability(enable_sensitive_data=settings.ENABLE_OTEL,applicationinsights_connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING)
 
     logger.info(f"Creating FastAPI application: {settings.APP_NAME}")
     
