@@ -106,8 +106,7 @@ class HandoffOrchestrator:
         #Agents are initialized asynchronously due to the use of MCP tools. So we can't initialize the workflow in __init__. We do it lazily here.
         if self.workflow is None:
                 await self.initialize()
-     
-         
+              
         checkpoint = None
         events = None
 
@@ -154,20 +153,14 @@ class HandoffOrchestrator:
         if checkpoint is None:
             raise AgentThreadException(f"No checkpoint found for thread_id: {thread_id} when trying to process tool approval response")
         
-        events = self.workflow.run_stream(checkpoint_id=checkpoint.checkpoint_id, checkpoint_storage=HandoffOrchestrator.checkpoint_storage) #type: ignore
+        events = self.workflow.run_stream(checkpoint_id=checkpoint.checkpoint_id, #type: ignore
+                                          checkpoint_storage=HandoffOrchestrator.checkpoint_storage) #type: ignore
         
         #restart the workflow to get the reference to FunctionApprovalRequestEvent
         consumed_events = [event async for event in events]
         for event in consumed_events:
             if isinstance(event, RequestInfoEvent):
                 if isinstance(event.data, FunctionApprovalRequestContent):
-                        # function_call_content = FunctionCallContent(call_id=call_id, name=tool_name)
-                        # response = FunctionApprovalResponseContent(
-                        #     approved=approved,
-                        #     id= request_id,
-                        #     function_call=function_call_content
-                        #     )
-                        #response = {event.request_id: response}
                         response = {event.request_id: event.data.create_response(approved=approved)}
                         async for event in self.workflow.send_responses_streaming(response) : #type: ignore
                             yield event
