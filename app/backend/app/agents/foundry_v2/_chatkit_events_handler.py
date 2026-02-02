@@ -7,7 +7,7 @@ from app.common.chatkit.types import ClientWidgetItem, CustomThreadItemDoneEvent
 import uuid
 from datetime import datetime
 
-from agent_framework import AgentRunResponseUpdate, AgentRunUpdateEvent, ExecutorCompletedEvent, FunctionApprovalRequestContent, FunctionCallContent, FunctionResultContent, RequestInfoEvent, TextContent, WorkflowEvent, WorkflowStatusEvent, ExecutorInvokedEvent, SuperStepStartedEvent, SuperStepCompletedEvent
+from agent_framework import Content,HandoffSentEvent,AgentResponseUpdate, AgentRunUpdateEvent, ExecutorCompletedEvent, RequestInfoEvent, WorkflowEvent, WorkflowStatusEvent, ExecutorInvokedEvent, SuperStepStartedEvent, SuperStepCompletedEvent
 from chatkit.types import (
     AssistantMessageContent,
     AssistantMessageContentPartTextDelta,
@@ -78,7 +78,7 @@ class ChatKitEventsHandler:
         self.content_index = 0
         self.tool_name_id_map = {}
 
-    def _handle_text_content(self, thread_id: str, message_id:str ,text:str) -> ThreadStreamEvent:
+    def _handle_text_content(self, thread_id: str, message_id:str ,text:str ) -> ThreadStreamEvent:
        
             # Start the assistant message if not already started
         if not self.message_started:
@@ -126,26 +126,31 @@ class ChatKitEventsHandler:
                 continue    
             
             #TODO: need to handle WorkflowFailedEvent
+            if isinstance(event, HandoffSentEvent): 
+               descriptive_title = f"Connected to {event.target} "
+               handoff_result_task = CustomTask(title=descriptive_title, icon="check-circle-filled")
+               taskResultUpdate =  TaskItem(thread_id=thread_id,id=f"tsk_{uuid.uuid4().hex[:8]}", task=handoff_result_task, created_at=datetime.now())
+               yield ThreadItemAddedEvent(item=taskResultUpdate) 
 
             if isinstance(event, AgentRunUpdateEvent):
-                if isinstance(event.data, AgentRunResponseUpdate) \
+                if isinstance(event.data, AgentResponseUpdate) \
                 and event.executor_id != "triage_agent" \
-                and event.data is not None and isinstance(event.data, AgentRunResponseUpdate) \
+                and event.data is not None and isinstance(event.data, AgentResponseUpdate) \
                 and event.data.contents \
                 and isinstance(event.data.contents, list) \
-                and all(isinstance(item, TextContent) for item in event.data.contents): 
+                and all(item.type == "text" for item in event.data.contents): 
                 #In our case we just return text
                     
                     text_update = event.data.contents[0].text #type: ignore
-                    yield self._handle_text_content(thread_id=thread_id,message_id=message_id,text=text_update)
+                    yield self._handle_text_content(thread_id=thread_id,message_id=message_id,text=text_update) #type: ignore
 
-                if isinstance(event.data, AgentRunResponseUpdate) \
+                if isinstance(event.data, AgentResponseUpdate) \
                 and event.executor_id != "triage_agent" \
                 and event.data.contents \
                 and isinstance(event.data.contents, list) \
-                and all(isinstance(item, FunctionCallContent) for item in event.data.contents):
+                and all(item.type == "function_call" for item in event.data.contents):
                     #force this to be FunctionCallContent
-                    function_call_content: FunctionCallContent = event.data.contents[0] #type: ignore
+                    function_call_content = event.data.contents[0] #type: ignore
                     
 
                     if function_call_content.name:
@@ -153,15 +158,15 @@ class ChatKitEventsHandler:
                          self.tool_name_id_map[call_id] = function_call_content.name
                          descriptive_title = event_description_map[function_call_content.name]["start"] if function_call_content.name in event_description_map else function_call_content.name
                          function_call_task = CustomTask(title=descriptive_title, icon="search")
-                         taskUpdate =  TaskItem(thread_id=thread_id,id=call_id, task=function_call_task, created_at=datetime.now())
+                         taskUpdate =  TaskItem(thread_id=thread_id,id=call_id, task=function_call_task, created_at=datetime.now()) #type: ignore
                          yield ThreadItemAddedEvent(item=taskUpdate)
 
-                if isinstance(event.data, AgentRunResponseUpdate) \
+                if isinstance(event.data, AgentResponseUpdate) \
                 and event.executor_id != "triage_agent" \
                 and event.data.contents \
                 and isinstance(event.data.contents, list) \
-                and all(isinstance(item, FunctionResultContent) for item in event.data.contents):
-                    function_result_content: FunctionResultContent = event.data.contents[0] #type: ignore
+                and all(item.type == "function_result" for item in event.data.contents):
+                    function_result_content = event.data.contents[0] #type: ignore
                     if function_result_content.call_id :
                        tool_name = self.tool_name_id_map.get(function_result_content.call_id, function_result_content.call_id)     
                        descriptive_title = event_description_map[tool_name]["end"] if tool_name in event_description_map else tool_name
@@ -169,16 +174,16 @@ class ChatKitEventsHandler:
                        taskResultUpdate =  TaskItem(thread_id=thread_id,id=function_result_content.call_id, task=function_result_task, created_at=datetime.now())
                        yield ThreadItemAddedEvent(item=taskResultUpdate)
                 
-                if isinstance(event.data, AgentRunResponseUpdate) \
+                if isinstance(event.data, AgentResponseUpdate) \
                 and event.executor_id != "triage_agent" \
                 and event.data.contents \
                 and isinstance(event.data.contents, list) \
-                and all(isinstance(item, FunctionApprovalRequestContent) for item in event.data.contents):
-                    function_approval_content: FunctionApprovalRequestContent = event.data.contents[0] #type: ignore
-                    tool_name =  function_approval_content.function_call.name
-                    parsed_args = function_approval_content.function_call.parse_arguments()
-                    function_approval_content.function_call.call_id
-                    approval_request_widget = build_approval_request(tool_name=tool_name, tool_args=parsed_args, call_id=function_approval_content.function_call.call_id, request_id=function_approval_content.id)
+                and all(item.type == "function_approval_request" for item in event.data.contents):
+                    function_approval_content : Content = event.data.contents[0].function_call #type: ignore
+                    tool_name =  function_approval_content.name 
+                    parsed_args = function_approval_content.arguments
+                    function_approval_content.call_id 
+                   # approval_request_widget = build_approval_request(tool_name=tool_name, tool_args=parsed_args, call_id=function_approval_content.call_id, request_id=function_approval_content.id)
                    # Server Managed Widget Item
                     # widget_item = WidgetItem(
                     # id= f"wdg_{uuid.uuid4().hex[:8]}",
@@ -195,7 +200,7 @@ class ChatKitEventsHandler:
                         args={
                             "tool_name": tool_name,
                             "tool_args": parsed_args,
-                            "call_id": function_approval_content.function_call.call_id,
+                            "call_id": function_approval_content.call_id,
                             "request_id": function_approval_content.id
                         }
                     )

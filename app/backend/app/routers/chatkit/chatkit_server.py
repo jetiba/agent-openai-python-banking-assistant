@@ -135,7 +135,6 @@ class BankingAssistantChatKitServer(ChatKitServer[dict[str, Any]]):
         runs the agent, converts the response back to ChatKit events using stream_agent_response,
         and creates interactive weather widgets when weather data is queried.
         """
-        from agent_framework import FunctionResultContent
 
         if input_user_message is None:
             logger.debug("Received None user message, skipping")

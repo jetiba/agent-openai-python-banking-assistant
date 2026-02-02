@@ -1,5 +1,5 @@
 from agent_framework.azure import AzureAIClient
-from agent_framework import ChatAgent, MCPStreamableHTTPTool
+from agent_framework import tool,ChatAgent, MCPStreamableHTTPTool
 from datetime import datetime
 
 import logging
@@ -7,6 +7,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+@tool(
+    name="handoff_to_TriageAgent", description="Handoff to the triage-agent agent."
+)
+def handoff_to_triage_agent(context: str | None = None) -> str:
+    """Transfer the conversation back to the triage agent."""
+    return "Handoff to TriageAgent"
 class TransactionHistoryAgent :
     instructions = """
     you are a personal financial advisor who help the user with their recurrent bill payments. To search about the payments history you need to know the payee name.
@@ -55,9 +61,11 @@ class TransactionHistoryAgent :
      )
       await transaction_mcp_server.connect()
 
-      return ChatAgent(
+      agent = ChatAgent(
             chat_client=self.azure_ai_client,
             instructions=full_instruction,
             name=TransactionHistoryAgent.name,
-            tools=[account_mcp_server, transaction_mcp_server],
+            tools=[account_mcp_server, transaction_mcp_server,handoff_to_triage_agent],
         )
+      agent.default_options["tools"] = [account_mcp_server, transaction_mcp_server,handoff_to_triage_agent]
+      return agent  

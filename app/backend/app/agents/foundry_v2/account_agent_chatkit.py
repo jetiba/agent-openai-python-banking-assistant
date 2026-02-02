@@ -1,10 +1,17 @@
 from agent_framework.azure import AzureAIClient
-from agent_framework import ChatAgent, MCPStreamableHTTPTool
+from agent_framework import tool,ChatAgent, MCPStreamableHTTPTool
 
 import logging
 
 
 logger = logging.getLogger(__name__)
+
+@tool(
+    name="handoff_to_TriageAgent", description="Handoff to the triage-agent agent."
+)
+def handoff_to_triage_agent(context: str | None = None) -> str:
+    """Transfer the conversation back to the triage agent."""
+    return "Handoff to TriageAgent"
 
 class AccountAgent :
     instructions = """
@@ -15,6 +22,7 @@ class AccountAgent :
     """
     name = "AccountAgent"
     description = "This agent manages user accounts related information such as balance, credit cards."
+   
 
     def __init__(self, azure_ai_client: AzureAIClient, account_mcp_server_url: str):
         self.azure_ai_client = azure_ai_client
@@ -41,10 +49,12 @@ class AccountAgent :
 
       #TODO: better error management  
       await account_mcp_server.connect()
-      return ChatAgent(
+      agent = ChatAgent(
             chat_client=self.azure_ai_client,
             instructions=full_instruction,
             name=AccountAgent.name,
-            tools=[account_mcp_server]
+            tools=[account_mcp_server, handoff_to_triage_agent]
         )
+      agent.default_options["tools"] = [account_mcp_server, handoff_to_triage_agent]
+      return agent
     

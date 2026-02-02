@@ -12,7 +12,7 @@ from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
 from app.config.settings import settings
 from app.config.azure_credential import get_azure_credential
 from app.helpers.blob_proxy import BlobStorageProxy
-from agent_framework._tools import ai_function
+from agent_framework._tools import tool
 
 logger = logging.getLogger(__name__)
 
@@ -145,10 +145,10 @@ class DocumentIntelligenceInvoiceScanHelper:
 
         return scan_data
 
-    #@ai_function(
+    # @tool(
     # name="scan_invoice_tool", 
-    # description="function to scan invoice and bill documents and extract relevant fields")
-    # approval_mode: "always_require"
+    # description="function to scan invoice and bill documents and extract relevant fields",
+    # approval_mode="never_require")
     def scan_invoice(
         self, 
         blob_name: Annotated[str, "the path to the file containing the image or photo or the attachment id"]

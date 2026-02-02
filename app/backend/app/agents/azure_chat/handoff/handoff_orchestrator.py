@@ -1,6 +1,6 @@
 from typing import Any, AsyncGenerator
 from collections.abc import AsyncIterable
-from agent_framework import AgentRunResponseUpdate, AgentRunUpdateEvent, ChatAgent,HandoffBuilder,InMemoryCheckpointStorage, RequestInfoEvent, TextContent,WorkflowCheckpoint, WorkflowEvent, HandoffUserInputRequest
+from agent_framework import AgentResponseUpdate, AgentRunUpdateEvent, ChatAgent,HandoffBuilder,InMemoryCheckpointStorage, RequestInfoEvent, ChatContext,WorkflowCheckpoint, WorkflowEvent, HandoffAgentUserRequest
 from agent_framework.exceptions import AgentThreadException
 from agent_framework.azure import AzureOpenAIChatClient
 from app.agents.azure_chat.account_agent import AccountAgent
@@ -63,7 +63,7 @@ class HandoffOrchestrator:
                           await self.transaction_agent.build_af_agent(),
                           await self.payment_agent.build_af_agent()],
         )
-        .set_coordinator("triage_agent")
+        .with_start_agent(triage_agent)
         .with_termination_condition(
             # Terminate after 20 user messages 
             # Count only USER role messages to avoid counting agent responses
@@ -80,10 +80,10 @@ class HandoffOrchestrator:
             
             if isinstance(event, AgentRunUpdateEvent):
                 if  event.executor_id != "triage_agent" \
-                    and event.data is not None and isinstance(event.data, AgentRunResponseUpdate) \
+                    and event.data is not None and isinstance(event.data, AgentResponseUpdate) \
                     and event.data.contents \
                     and isinstance(event.data.contents, list) \
-                    and all(isinstance(item, TextContent) for item in event.data.contents):
+                    and all( item.type == "text" for item in event.data.contents):
                     #In our case we just return text
                     yield event.data.contents[0].text #type: ignore
             
@@ -104,12 +104,11 @@ class HandoffOrchestrator:
         consumed_events = [event async for event in events]
         for event in consumed_events:
             if isinstance(event, RequestInfoEvent):
-                if isinstance(event.data, HandoffUserInputRequest):
+                if isinstance(event.data, HandoffAgentUserRequest):
                         response = {event.request_id: user_message}
                         return self.workflow.send_responses_streaming(response) #type: ignore
                 else:
-                    raise AgentThreadException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint_id}] that is not a HandoffUserInputRequest.")
-
+                    raise AgentThreadException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint_id}] that is not a HandoffAgentUserRequest.")
         #if we reach here, something went wrong. For this use case HandoffOrchestrator expected to always trigger a RequestInfoEvent.
         raise AgentThreadException(f"No RequestInfoEvent found in the checkpoint [{checkpoint_id}]")
             

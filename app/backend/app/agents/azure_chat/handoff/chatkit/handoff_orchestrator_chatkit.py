@@ -1,6 +1,6 @@
 from typing import Any, AsyncGenerator
 from collections.abc import AsyncIterable
-from agent_framework import AgentRunResponseUpdate, AgentRunUpdateEvent, ChatAgent, FunctionApprovalRequestContent, FunctionCallContent,HandoffBuilder,InMemoryCheckpointStorage, RequestInfoEvent, TextContent,WorkflowCheckpoint, WorkflowEvent, HandoffUserInputRequest, FunctionApprovalResponseContent
+from agent_framework import Content,AgentResponseUpdate, AgentRunUpdateEvent, ChatAgent,HandoffBuilder,InMemoryCheckpointStorage, RequestInfoEvent,WorkflowCheckpoint, WorkflowEvent, HandoffAgentUserRequest
 from agent_framework.exceptions import AgentThreadException
 from agent_framework.azure import AzureOpenAIChatClient
 from app.agents.azure_chat.handoff.chatkit.account_agent_chatkit import AccountAgent
@@ -63,7 +63,7 @@ class HandoffOrchestrator:
                           await self.transaction_agent.build_af_agent(),
                           await self.payment_agent.build_af_agent()],
         )
-        .set_coordinator(triage_agent)
+        .with_start_agent(triage_agent)
         .with_termination_condition(
             # Terminate after 20 user messages 
             # Count only USER role messages to avoid counting agent responses
@@ -87,16 +87,17 @@ class HandoffOrchestrator:
         """
         events = self.workflow.run_stream(checkpoint_id=checkpoint_id, checkpoint_storage=HandoffOrchestrator.checkpoint_storage) #type: ignore
         
+        responses: dict[str, object] = {}
+        
         #We need to collect all workflow events otherwise we get concurrent workflow execution error when trying to resume.
         consumed_events = [event async for event in events]
         for event in consumed_events:
             if isinstance(event, RequestInfoEvent):
-                if isinstance(event.data, HandoffUserInputRequest):
-                        response = {event.request_id: user_message}
-                        return self.workflow.send_responses_streaming(response) #type: ignore
+                if isinstance(event.data, HandoffAgentUserRequest):
+                        responses[event.request_id] = HandoffAgentUserRequest.create_response(user_message)
+                        return self.workflow.send_responses_streaming(responses) #type: ignore
                 else:
-                    raise AgentThreadException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint_id}] that is not a HandoffUserInputRequest.")
-
+                    raise AgentThreadException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint_id}] that is not a HandoffAgentUserRequest.")
         #if we reach here, something went wrong. For this use case HandoffOrchestrator expected to always trigger a RequestInfoEvent.
         raise AgentThreadException(f"No RequestInfoEvent found in the checkpoint [{checkpoint_id}]")
             
@@ -156,13 +157,15 @@ class HandoffOrchestrator:
         events = self.workflow.run_stream(checkpoint_id=checkpoint.checkpoint_id, #type: ignore
                                           checkpoint_storage=HandoffOrchestrator.checkpoint_storage) #type: ignore
         
+        responses: dict[str, object] = {}
         #restart the workflow to get the reference to FunctionApprovalRequestEvent
         consumed_events = [event async for event in events]
         for event in consumed_events:
+            yield event
             if isinstance(event, RequestInfoEvent):
-                if isinstance(event.data, FunctionApprovalRequestContent):
-                        response = {event.request_id: event.data.create_response(approved=approved)}
-                        async for event in self.workflow.send_responses_streaming(response) : #type: ignore
+                if isinstance(event.data, Content) and event.data.type == "function_approval_request":
+                        responses[event.request_id] = event.data.to_function_approval_response(approved=approved)
+                        async for event in self.workflow.send_responses_streaming(responses) : #type: ignore
                             yield event
                 else:
                     raise AgentThreadException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint.checkpoint_id}] that is not a HandoffUserInputRequest.")

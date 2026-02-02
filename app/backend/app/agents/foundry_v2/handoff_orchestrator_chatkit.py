@@ -1,6 +1,6 @@
 from typing import Any, AsyncGenerator
-from collections.abc import AsyncIterable
-from agent_framework import AgentRunResponseUpdate, AgentRunUpdateEvent, ChatAgent, FunctionApprovalRequestContent, FunctionCallContent,HandoffBuilder,InMemoryCheckpointStorage, RequestInfoEvent, TextContent,WorkflowCheckpoint, WorkflowEvent, HandoffUserInputRequest, FunctionApprovalResponseContent
+from collections.abc import AsyncIterable,Sequence
+from agent_framework import AgentProtocol,FunctionTool,tool,Content,AgentResponseUpdate, AgentRunUpdateEvent, ChatAgent,HandoffBuilder,InMemoryCheckpointStorage, RequestInfoEvent,WorkflowCheckpoint, WorkflowEvent, HandoffAgentUserRequest
 from agent_framework.exceptions import AgentThreadException
 from agent_framework.azure import AzureAIClient
 from app.agents.foundry_v2.account_agent_chatkit import AccountAgent
@@ -9,8 +9,97 @@ from app.agents.foundry_v2.payment_agent_chatkit import PaymentAgent
 from uuid import uuid4
 import logging
 
+from agent_framework._workflows._handoff import (
+    HandoffAgentExecutor,
+    HandoffBuilder,
+    HandoffConfiguration,
+)
+
 logger = logging.getLogger(__name__)
 
+
+
+# Define handoff tools upfront for Azure AI Agents.
+# Azure AI Agents require tools to be defined at agent creation time (server-side),
+# so we create the handoff tools here and pass them during agent creation.
+# The HandoffBuilder's middleware will intercept these tool calls to perform routing.
+@tool(
+    name="handoff_to_TriageAgent", description="Handoff to the triage-agent agent."
+)
+def handoff_to_triage_agent(context: str | None = None) -> str:
+    """Transfer the conversation back to the triage agent."""
+    return "Handoff to TriageAgent"
+
+@tool(
+    name="handoff_to_AccountAgent", description="Handoff to the account-agent agent."
+)
+def handoff_to_account_agent(context: str | None = None) -> str:
+    """Transfer the conversation to the account agent."""
+    return "Handoff to AccountAgent"
+
+@tool(
+    name="handoff_to_TransactionHistoryAgent", description="Handoff to the transaction-history-agent agent."
+)
+def handoff_to_transaction_history_agent(context: str | None = None) -> str:
+    """Transfer the conversation to the transaction history agent."""
+    return "Handoff to TransactionHistoryAgent"
+
+@tool(
+    name="handoff_to_PaymentAgent", description="Handoff to the payment-agent agent."
+)
+def handoff_to_payment_agent(context: str | None = None) -> str:
+    """Transfer the conversation to the payment agent."""
+    return "Handoff to PaymentAgent"
+
+class CustomHandoffAgentExecutor(HandoffAgentExecutor):
+    """Custom executor with overridden handoff tool generation."""
+
+    def _apply_auto_tools(self, agent: ChatAgent, targets: Sequence[HandoffConfiguration]) -> None:
+        default_options = agent.default_options
+        existing_tools = list(default_options.get("tools") or [])
+        existing_names = {getattr(tool, "name", "") for tool in existing_tools if hasattr(tool, "name")}
+
+        new_tools: list[FunctionTool[Any, Any]] = []
+        for target in targets:
+            tool = self._create_handoff_tool(target.target_id, target.description)
+            if tool.name in existing_names:
+                # Skip if handoff tool already exists
+                continue
+            new_tools.append(tool)
+
+        if new_tools:
+            default_options["tools"] = existing_tools + new_tools  # type: ignore[operator]
+        else:
+            default_options["tools"] = existing_tools
+
+class CustomHandoffBuilder(HandoffBuilder):
+    """Builder that uses the custom executor."""
+
+    def _resolve_executors(
+        self,
+        agents: dict[str, AgentProtocol],
+        handoffs: dict[str, list[HandoffConfiguration]],
+    ) -> dict[str, HandoffAgentExecutor]:
+        executors: dict[str, HandoffAgentExecutor] = {}
+
+        for id, agent in agents.items():
+            resolved_id = self._resolve_to_id(agent)
+            autonomous_mode = self._autonomous_mode and (
+                not self._autonomous_mode_enabled_agents or id in self._autonomous_mode_enabled_agents
+            )
+
+            executors[resolved_id] = CustomHandoffAgentExecutor(
+                agent=agent,
+                handoffs=handoffs.get(resolved_id, []),
+                is_start_agent=(id == self._start_id),
+                termination_condition=self._termination_condition,
+                autonomous_mode=autonomous_mode,
+                autonomous_mode_prompt=self._autonomous_mode_prompts.get(id, None),
+                autonomous_mode_turn_limit=self._autonomous_mode_turn_limits.get(id, None),
+            )
+
+        return executors
+    
 class HandoffOrchestrator:
     
     triage_instructions = """
@@ -52,18 +141,33 @@ class HandoffOrchestrator:
       triage_agent = ChatAgent(
             chat_client=self.azure_ai_client,
             instructions=HandoffOrchestrator.triage_instructions,
-            name="TriageAgent"
+            name="TriageAgent",
+            tools=[handoff_to_account_agent, handoff_to_transaction_history_agent, handoff_to_payment_agent]
         )
       
+       # Register handoff tools in default_options so CustomHandoffBuilder sees them
+      triage_agent.default_options["tools"] = [
+        handoff_to_account_agent,
+        handoff_to_transaction_history_agent,
+        handoff_to_payment_agent,
+    ]
+      
+      account_agent = await self.account_agent.build_af_agent()
+      transaction_agent = await self.transaction_agent.build_af_agent()
+      payment_agent = await self.payment_agent.build_af_agent()
+      
       self.workflow = (
-        HandoffBuilder(
+        CustomHandoffBuilder(
             name="banking_assistant_handoff",
-            participants=[triage_agent, 
-                          await self.account_agent.build_af_agent(),
-                          await self.transaction_agent.build_af_agent(),
-                          await self.payment_agent.build_af_agent()],
+            participants=[triage_agent,account_agent,transaction_agent,payment_agent],
         )
-        .set_coordinator(triage_agent)
+        .with_start_agent(triage_agent)
+        .add_handoff(
+            triage_agent, [account_agent, transaction_agent, payment_agent]
+        )  # Triage can hand off to specialists
+        .add_handoff(account_agent, [triage_agent])  # Specialists can hand off back to triage
+        .add_handoff(transaction_agent, [triage_agent])  # Specialists can hand off back to triage
+        .add_handoff(payment_agent, [triage_agent])  # Specialists can hand off
         .with_termination_condition(
             # Terminate after 20 user messages 
             # Count only USER role messages to avoid counting agent responses
@@ -87,15 +191,16 @@ class HandoffOrchestrator:
         """
         events = self.workflow.run_stream(checkpoint_id=checkpoint_id, checkpoint_storage=HandoffOrchestrator.checkpoint_storage) #type: ignore
         
+        responses: dict[str, object] = {}
         #We need to collect all workflow events otherwise we get concurrent workflow execution error when trying to resume.
         consumed_events = [event async for event in events]
         for event in consumed_events:
             if isinstance(event, RequestInfoEvent):
-                if isinstance(event.data, HandoffUserInputRequest):
-                        response = {event.request_id: user_message}
-                        return self.workflow.send_responses_streaming(response) #type: ignore
+                if isinstance(event.data, HandoffAgentUserRequest):
+                        responses[event.request_id] = HandoffAgentUserRequest.create_response(user_message)
+                        return self.workflow.send_responses_streaming(responses) #type: ignore
                 else:
-                    raise AgentThreadException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint_id}] that is not a HandoffUserInputRequest.")
+                    raise AgentThreadException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint_id}] that is not a HandoffAgentUserRequest.")
 
         #if we reach here, something went wrong. For this use case HandoffOrchestrator expected to always trigger a RequestInfoEvent.
         raise AgentThreadException(f"No RequestInfoEvent found in the checkpoint [{checkpoint_id}]")
@@ -156,20 +261,15 @@ class HandoffOrchestrator:
         
         events = self.workflow.run_stream(checkpoint_id=checkpoint.checkpoint_id, checkpoint_storage=HandoffOrchestrator.checkpoint_storage) #type: ignore
         
+        responses: dict[str, object] = {}
         #restart the workflow to get the reference to FunctionApprovalRequestEvent
         consumed_events = [event async for event in events]
         for event in consumed_events:
+            yield event
             if isinstance(event, RequestInfoEvent):
-                if isinstance(event.data, FunctionApprovalRequestContent):
-                        # function_call_content = FunctionCallContent(call_id=call_id, name=tool_name)
-                        # response = FunctionApprovalResponseContent(
-                        #     approved=approved,
-                        #     id= request_id,
-                        #     function_call=function_call_content
-                        #     )
-                        #response = {event.request_id: response}
-                        response = {event.request_id: event.data.create_response(approved=approved)}
-                        async for event in self.workflow.send_responses_streaming(response) : #type: ignore
+                if isinstance(event.data, Content) and event.data.type == "function_approval_request":
+                        responses[event.request_id] = event.data.to_function_approval_response(approved=approved)
+                        async for event in self.workflow.send_responses_streaming(responses) : #type: ignore
                             yield event
                 else:
                     raise AgentThreadException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint.checkpoint_id}] that is not a HandoffUserInputRequest.")

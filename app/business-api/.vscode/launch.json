@@ -69,7 +69,8 @@
                 "PROFILE": "dev"
             },
             "cwd": "${workspaceFolder}/python/transaction",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "justMyCode": false
         },
         {
             "name": "Payment MCP: DEV (Python Main)",
