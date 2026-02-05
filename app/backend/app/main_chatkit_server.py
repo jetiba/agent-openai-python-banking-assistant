@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers.chatkit import attachment_routers
 from app.routers.chatkit import chat_routers
+from app.routers import m365_router
 from app.config.settings import settings
 from app.config.logging import get_logger, setup_logging
 from agent_framework.observability import setup_observability
@@ -31,7 +32,7 @@ def create_app() -> FastAPI:
     container = Container()
     
     # Wire dependencies to modules that need them
-    container.wire(modules=[chat_routers,attachment_routers])
+    container.wire(modules=[chat_routers, attachment_routers, m365_router])
     
     # Store container in app state for potential cleanup
     app.state.container = container
@@ -50,7 +51,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(chat_routers.router, tags=["chat"])
     app.include_router(attachment_routers.router, tags=["attachments"])
-
+    app.include_router(m365_router.router, tags=["m365"])
 
 
     logger.info("FastAPI application created successfully")
