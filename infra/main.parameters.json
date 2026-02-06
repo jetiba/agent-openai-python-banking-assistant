@@ -71,15 +71,6 @@
     },
     "transactionAppExists": {
       "value": false
-    },
-    "enableAzureBot": {
-      "value": "${ENABLE_AZURE_BOT=false}"
-    },
-    "azureBotSku": {
-      "value": "${AZURE_BOT_SKU=F0}"
-    },
-    "azureBotName": {
-      "value": "${AZURE_BOT_NAME}"
     }
   }
 
