@@ -26,7 +26,13 @@ _m365_connection_manager = None
 
 
 def _ensure_m365_initialized():
-    """Lazily initialize M365 Agent SDK components."""
+    """Lazily initialize M365 Agent SDK components.
+    
+    Uses User Assigned Managed Identity for authentication (no client secret required).
+    Environment variables expected:
+    - M365_APP_ID: Bot App ID (Managed Identity Client ID)
+    - M365_APP_TENANT_ID: Azure AD Tenant ID
+    """
     global _m365_initialized, _m365_adapter, _m365_storage, _m365_connection_manager
     
     if _m365_initialized:
@@ -34,22 +40,40 @@ def _ensure_m365_initialized():
     
     try:
         from microsoft_agents.hosting.fastapi import CloudAdapter
-        from microsoft_agents.hosting.core import MemoryStorage
+        from microsoft_agents.hosting.core import MemoryStorage, AuthTypes, AgentAuthConfiguration
         from microsoft_agents.authentication.msal import MsalConnectionManager
-        from microsoft_agents.activity import load_configuration_from_env
         
-        # Load M365 configuration from environment
-        agents_sdk_config = load_configuration_from_env(os.environ)
+        # Get M365 configuration from environment
+        bot_app_id = os.environ.get("M365_APP_ID")
+        tenant_id = os.environ.get("M365_APP_TENANT_ID")
         
-        # Create storage and connection manager
+        if not bot_app_id:
+            logger.warning("M365_APP_ID not configured, M365 integration disabled")
+            return False
+        
+        # Create storage
         _m365_storage = MemoryStorage()
-        _m365_connection_manager = MsalConnectionManager(**agents_sdk_config)
+        
+        # Create AgentAuthConfiguration for User Assigned Managed Identity
+        service_connection_config = AgentAuthConfiguration(
+            client_id=bot_app_id,
+            tenant_id=tenant_id or "",
+            auth_type=AuthTypes.user_managed_identity,
+            connection_name="SERVICE_CONNECTION",
+        )
+        
+        # Create connection manager with the configuration object
+        _m365_connection_manager = MsalConnectionManager(
+            connections_configurations={
+                "SERVICE_CONNECTION": service_connection_config
+            }
+        )
         
         # Create adapter
         _m365_adapter = CloudAdapter(connection_manager=_m365_connection_manager)
         
         _m365_initialized = True
-        logger.info("M365 Agent SDK initialized successfully")
+        logger.info(f"M365 Agent SDK initialized successfully with App ID: {bot_app_id[:8]}...")
         return True
         
     except ImportError as e:
@@ -84,7 +108,6 @@ async def messages_endpoint(
         )
     
     try:
-        from microsoft_agents.hosting.fastapi import start_agent_process
         from app.agents.m365.banking_activity_handler import BankingActivityHandler
         
         # Create a factory function that returns the injected orchestrator
@@ -97,11 +120,9 @@ async def messages_endpoint(
         )
         
         # Process the request using the M365 adapter
-        return await start_agent_process(
-            request,
-            handler,
-            _m365_adapter
-        )
+        # The CloudAdapter.process() method works with any Agent (including ActivityHandler)
+        response = await _m365_adapter.process(request, handler)
+        return response or Response(status_code=202)
         
     except Exception as e:
         logger.error(f"Error processing M365 message: {e}", exc_info=True)

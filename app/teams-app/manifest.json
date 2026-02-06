@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
   "manifestVersion": "1.22",
   "version": "1.0.0",
-  "id": "{{BOT_ID}}",
+  "id": "${{BOT_APP_ID}}",
   "developer": {
     "name": "Contoso Banking",
     "websiteUrl": "https://contoso.com",
@@ -15,7 +15,7 @@
   },
   "description": {
     "short": "AI-powered banking assistant for accounts, transactions, and payments",
-    "full": "Get help with your bank accounts, view transaction history, make payments, and manage your finances through natural conversation. Powered by AI multi-agent orchestration. This assistant can help you check balances, search transactions, and process payments with approval workflows."
+    "full": "Get help with your bank accounts, view transaction history, make payments, and manage your finances through natural conversation. Powered by AI multi-agent orchestration."
   },
   "icons": {
     "outline": "outline.png",
@@ -24,18 +24,17 @@
   "accentColor": "#0078D4",
   "bots": [
     {
-      "botId": "{{BOT_ID}}",
+      "botId": "${{BOT_APP_ID}}",
       "scopes": [
         "personal",
         "team",
-        "groupChat",
-        "copilot"
+        "groupChat"
       ],
       "supportsFiles": false,
       "isNotificationOnly": false,
       "commandLists": [
         {
-          "scopes": ["personal", "copilot"],
+          "scopes": ["personal"],
           "commands": [
             {
               "title": "balance",
@@ -50,23 +49,6 @@
               "description": "Make a payment or transfer"
             },
             {
-              "title": "cards",
-              "description": "View your credit cards"
-            },
-            {
-              "title": "help",
-              "description": "Get help with available commands"
-            }
-          ]
-        },
-        {
-          "scopes": ["team", "groupChat"],
-          "commands": [
-            {
-              "title": "summary",
-              "description": "Get a summary of account activity"
-            },
-            {
               "title": "help",
               "description": "Get help with available commands"
             }
@@ -75,24 +57,13 @@
       ]
     }
   ],
-  "copilotAgents": {
-    "customEngineAgents": [
-      {
-        "id": "{{BOT_ID}}",
-        "type": "bot",
-        "disclaimer": {
-          "text": "This banking assistant uses AI to help with your financial queries. Always verify important financial information before making decisions. Sensitive actions require your explicit approval."
-        }
-      }
-    ]
-  },
   "permissions": [
     "identity",
     "messageTeamMembers"
   ],
   "validDomains": [
-    "*.azurewebsites.net",
-    "*.ngrok-free.app",
+    "${{BACKEND_DOMAIN}}",
+    "*.azurecontainerapps.io",
     "token.botframework.com"
   ],
   "defaultInstallScope": "personal"

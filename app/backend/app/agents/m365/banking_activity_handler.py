@@ -5,11 +5,19 @@ converting between the Bot Framework activity protocol and Agent Framework event
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Callable
 
-from microsoft_agents.hosting.core import TurnContext, MessageFactory
-from microsoft_agents.hosting.core import ActivityHandler
-from microsoft_agents.activity import ChannelAccount, Attachment, Activity, ActivityTypes
+from microsoft_agents.hosting.core import (
+    ActivityHandler,
+    TurnContext,
+    MessageFactory,
+)
+from microsoft_agents.activity import (
+    ChannelAccount,
+    Attachment,
+    Activity,
+    ActivityTypes,
+)
 
 from app.agents.azure_chat.handoff.handoff_orchestrator import HandoffOrchestrator
 from .m365_events_handler import M365EventsHandler, M365Response
@@ -28,6 +36,8 @@ class BankingActivityHandler(ActivityHandler):
     
     # Class-level storage for conversation state (in production, use persistent storage)
     _conversation_orchestrators: Dict[str, HandoffOrchestrator] = {}
+    # Map Teams conversation IDs to orchestrator thread IDs
+    _conversation_thread_map: Dict[str, str] = {}
     
     def __init__(
         self,
@@ -46,6 +56,14 @@ class BankingActivityHandler(ActivityHandler):
         if conversation_id not in self._conversation_orchestrators:
             self._conversation_orchestrators[conversation_id] = self._orchestrator_factory()
         return self._conversation_orchestrators[conversation_id]
+    
+    def _get_thread_id(self, conversation_id: str) -> Optional[str]:
+        """Get the orchestrator thread ID for a Teams conversation (None if new)."""
+        return self._conversation_thread_map.get(conversation_id)
+    
+    def _set_thread_id(self, conversation_id: str, thread_id: str):
+        """Store the orchestrator thread ID for a Teams conversation."""
+        self._conversation_thread_map[conversation_id] = thread_id
     
     async def on_members_added_activity(
         self,
@@ -126,36 +144,53 @@ class BankingActivityHandler(ActivityHandler):
         conversation_id: str,
         turn_context: TurnContext
     ):
-        """Process a message through the orchestrator and send responses."""
+        """Process a message through the orchestrator and send responses.
         
-        # Get the event stream from the orchestrator
-        events = orchestrator.processMessageStream(message, conversation_id)
+        The orchestrator's processMessageStream yields tuples of:
+        (content_chunk: str, is_final: bool, thread_id: str | None)
+        """
         
-        # Convert Agent Framework events to M365 responses
-        handler = M365EventsHandler()
+        # Get the thread ID for this conversation (None for new conversations)
+        thread_id = self._get_thread_id(conversation_id)
         
-        responses: list[M365Response] = []
-        async for response in handler.handle_events(events):
-            responses.append(response)
+        logger.debug(f"Processing with thread_id: {thread_id} (conversation: {conversation_id})")
         
-        # Send all responses to Teams/Copilot
-        for response in responses:
-            if response.is_typing:
-                await turn_context.send_activity(Activity(type=ActivityTypes.typing))
+        # Accumulate content chunks
+        accumulated_content = ""
+        returned_thread_id = None
+        
+        try:
+            async for content, is_final, tid in orchestrator.processMessageStream(message, thread_id):
+                # Accumulate text content
+                if content:
+                    accumulated_content += content
+                
+                # Capture thread_id when returned
+                if tid:
+                    returned_thread_id = tid
+                
+                # On final chunk, send the accumulated response
+                if is_final:
+                    break
             
-            if response.text:
-                await turn_context.send_activity(
-                    MessageFactory.text(response.text)
-                )
+            # Store the thread ID mapping for future messages
+            if returned_thread_id:
+                self._set_thread_id(conversation_id, returned_thread_id)
+                logger.debug(f"Stored thread mapping: {conversation_id} -> {returned_thread_id}")
             
-            if response.adaptive_card:
-                attachment = Attachment(
-                    content_type="application/vnd.microsoft.card.adaptive",
-                    content=response.adaptive_card
-                )
+            # Send the accumulated response to Teams
+            if accumulated_content:
                 await turn_context.send_activity(
-                    MessageFactory.attachment(attachment)
+                    MessageFactory.text(accumulated_content)
                 )
+            else:
+                await turn_context.send_activity(
+                    MessageFactory.text("I processed your request but have no response to show.")
+                )
+                
+        except Exception as e:
+            logger.error(f"Error in orchestrator processing: {e}", exc_info=True)
+            raise
     
     async def _handle_card_action(self, turn_context: TurnContext):
         """Handle Adaptive Card action submissions (like approval/rejection).

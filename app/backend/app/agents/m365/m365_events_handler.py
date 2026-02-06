@@ -78,6 +78,7 @@ class M365Response:
     text: str | None = None
     adaptive_card: Dict[str, Any] | None = None
     is_typing: bool = False
+    thread_id: str | None = None  # Orchestrator thread ID for conversation tracking
     is_final: bool = False
 
 

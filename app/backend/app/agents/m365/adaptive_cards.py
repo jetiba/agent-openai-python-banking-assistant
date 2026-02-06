@@ -254,3 +254,111 @@ def build_error_card(message: str, allow_retry: bool = True) -> Dict[str, Any]:
     }
     
     return card
+
+
+def build_payment_confirmation_card(payment_details: Dict[str, Any]) -> Dict[str, Any]:
+    """Build an Adaptive Card for payment confirmation with Approve/Reject buttons.
+    
+    Args:
+        payment_details: Dictionary of payment fields (Payee Name, Amount, etc.)
+        
+    Returns:
+        Adaptive Card JSON structure
+    """
+    # Build the details rows
+    detail_rows = []
+    for key, value in payment_details.items():
+        detail_rows.append({
+            "type": "TableRow",
+            "cells": [
+                {
+                    "type": "TableCell",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": key,
+                            "weight": "Bolder",
+                            "wrap": True
+                        }
+                    ]
+                },
+                {
+                    "type": "TableCell",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": str(value),
+                            "wrap": True
+                        }
+                    ]
+                }
+            ]
+        })
+    
+    card = {
+        "type": "AdaptiveCard",
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "version": "1.5",
+        "body": [
+            {
+                "type": "Container",
+                "style": "emphasis",
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": "💳 Payment Confirmation Required",
+                        "weight": "Bolder",
+                        "size": "Medium",
+                        "color": "Accent"
+                    }
+                ]
+            },
+            {
+                "type": "TextBlock",
+                "text": "Please review the payment details below:",
+                "wrap": True,
+                "spacing": "Medium"
+            },
+            {
+                "type": "Table",
+                "columns": [
+                    {"width": 1},
+                    {"width": 2}
+                ],
+                "rows": detail_rows,
+                "gridStyle": "accent",
+                "showGridLines": True
+            },
+            {
+                "type": "TextBlock",
+                "text": "Do you want to proceed with this payment?",
+                "wrap": True,
+                "spacing": "Medium",
+                "weight": "Bolder"
+            }
+        ],
+        "actions": [
+            {
+                "type": "Action.Submit",
+                "title": "✅ Approve",
+                "style": "positive",
+                "data": {
+                    "action": "payment_approval",
+                    "decision": "yes",
+                    "payment_details": payment_details
+                }
+            },
+            {
+                "type": "Action.Submit",
+                "title": "❌ Reject",
+                "style": "destructive",
+                "data": {
+                    "action": "payment_approval",
+                    "decision": "no",
+                    "payment_details": payment_details
+                }
+            }
+        ]
+    }
+    
+    return card
