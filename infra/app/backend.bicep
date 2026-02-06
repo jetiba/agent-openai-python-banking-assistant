@@ -33,7 +33,7 @@ module app '../shared/host/container-app-upsert.bicep' = {
     containerCpuCoreCount: '1.0'
     containerMemory: '2.0Gi'
     targetPort: 8080
-    external: true  // Required for Azure Bot Framework to reach messaging endpoint
+    external:false
     env: union(env, [
       {
         name: 'AZURE_CLIENT_ID'
@@ -49,6 +49,7 @@ module app '../shared/host/container-app-upsert.bicep' = {
         value: corsAcaUrl
       }
     ])
+    
   }
 }
 
