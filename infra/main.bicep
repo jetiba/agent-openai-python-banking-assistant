@@ -98,6 +98,17 @@ param accountAppExists bool = false
 param paymentAppExists bool = false
 param transactionAppExists bool = false
 
+// M365 Agent SDK / Azure Bot Service Parameters
+@description('Enable Azure Bot Service for Teams/Copilot integration')
+param enableAzureBot bool = false
+
+@description('Azure Bot SKU: F0 (free) or S1 (standard)')
+@allowed(['F0', 'S1'])
+param azureBotSku string = 'F0'
+
+@description('Azure Bot name')
+param azureBotName string = ''
+
 
 var abbrs = loadJsonContent('shared/abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
@@ -136,6 +147,16 @@ module monitoring 'shared/monitor/monitoring.bicep' = {
   }
 }
 
+// User Assigned Managed Identity for Azure Bot (Teams/Copilot) - defined early so backend can reference it
+module botManagedIdentity 'shared/bot/bot-identity.bicep' = if (enableAzureBot) {
+  name: 'bot-managed-identity'
+  scope: resourceGroup
+  params: {
+    name: '${abbrs.managedIdentityUserAssignedIdentities}bot-${resourceToken}'
+    location: location
+    tags: tags
+  }
+}
 
 module containerApps 'shared/host/container-apps.bicep' = {
   name: 'container-apps'
@@ -211,7 +232,15 @@ module backend 'app/backend.bicep' = {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
         value: monitoring.outputs.applicationInsightsInstrumentationKey
       }
-     
+      // M365 Agent SDK settings for Teams/Copilot integration (uses MSI, no secret needed)
+      {
+        name: 'M365_APP_ID'
+        value: enableAzureBot ? botManagedIdentity.outputs.clientId : ''
+      }
+      {
+        name: 'M365_APP_TENANT_ID'
+        value: tenant().tenantId
+      }
     ]
   }
 }
@@ -292,6 +321,25 @@ module web 'app/web.bicep' = {
     containerAppsEnvironmentName: containerApps.outputs.environmentName
     containerRegistryName: containerApps.outputs.registryName
     exists: webAppExists
+  }
+}
+
+// Azure Bot Service for Teams/Copilot Integration (using User Assigned Managed Identity)
+module azureBot 'shared/bot/azure-bot-msi.bicep' = if (enableAzureBot) {
+  name: 'azure-bot'
+  scope: resourceGroup
+  params: {
+    name: !empty(azureBotName) ? azureBotName : '${abbrs.cognitiveServicesAccounts}bot-${resourceToken}'
+    location: 'global'
+    tags: tags
+    microsoftAppId: enableAzureBot ? botManagedIdentity.outputs.clientId : ''
+    microsoftAppTenantId: tenant().tenantId
+    userAssignedManagedIdentityId: enableAzureBot ? botManagedIdentity.outputs.identityId : ''
+    messagingEndpoint: '${backend.outputs.SERVICE_API_URI}/api/messages'
+    sku: azureBotSku
+    // Teams channel is enabled by default - no need to create explicitly
+    enableTeamsChannel: false
+    enableM365ExtensionsChannel: false
   }
 }
 
@@ -467,7 +515,11 @@ output AZURE_STORAGE_ACCOUNT string = storage.outputs.name
 output AZURE_STORAGE_CONTAINER string = storageContainerName
 output AZURE_STORAGE_RESOURCE_GROUP string = storageResourceGroup.name
 
-
+// Azure Bot Service outputs (when enabled)
+output AZURE_BOT_NAME string = enableAzureBot ? azureBot.outputs.botName : ''
+output AZURE_BOT_MESSAGING_ENDPOINT string = enableAzureBot ? azureBot.outputs.botEndpoint : ''
+output AZURE_BOT_MSI_APP_ID string = enableAzureBot ? botManagedIdentity.outputs.clientId : ''
+output AZURE_BOT_MSI_IDENTITY_ID string = enableAzureBot ? botManagedIdentity.outputs.identityId : ''
 
 // output BACKEND_URI string = backend.outputs.uri
 // output INDEXER_FUNCTIONAPP_NAME string = indexer.outputs.name

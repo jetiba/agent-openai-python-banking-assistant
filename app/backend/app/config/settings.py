@@ -71,6 +71,13 @@ class Settings(BaseSettings):
     TRANSACTION_MCP_URL: str | None= Field(default=None,description="MCP server URL (required)", min_length=1)
     PAYMENT_MCP_URL: str | None= Field(default=None,description="MCP server URL (required)", min_length=1)
 
+    # M365 Agent SDK Settings (Teams/Copilot)
+    # These are used by the microsoft-agents SDK via load_configuration_from_env()
+    # The SDK expects: MicrosoftAppId, MicrosoftAppPassword, MicrosoftAppTenantId
+    M365_APP_ID: str | None = Field(default=None, description="Azure AD App Registration Client ID for M365 Agent")
+    M365_APP_PASSWORD: str | None = Field(default=None, description="Azure AD App Registration Client Secret")
+    M365_APP_TENANT_ID: str | None = Field(default=None, description="Azure AD Tenant ID (or 'common' for multi-tenant)")
+
     # Support for User Assigned Managed Identity: empty means system-managed
     AZURE_CLIENT_ID: str  | None = Field(default="system-managed-identity")
 
