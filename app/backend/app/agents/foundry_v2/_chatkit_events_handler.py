@@ -7,7 +7,7 @@ from app.common.chatkit.types import ClientWidgetItem, CustomThreadItemDoneEvent
 import uuid
 from datetime import datetime
 
-from agent_framework import Content,HandoffSentEvent,AgentResponseUpdate, AgentRunUpdateEvent, ExecutorCompletedEvent, RequestInfoEvent, WorkflowEvent, WorkflowStatusEvent, ExecutorInvokedEvent, SuperStepStartedEvent, SuperStepCompletedEvent
+from agent_framework import Content,AgentResponseUpdate, WorkflowEvent
 from chatkit.types import (
     AssistantMessageContent,
     AssistantMessageContentPartTextDelta,
@@ -26,7 +26,7 @@ from chatkit.types import (
 
 #dictionary for tool call name <-> description mapper
 event_description_map = {
-    "WorkflowStartedEvent" : "Processing your request ...",
+    "started" : "Processing your request ...",
     "getAccountsByUserName": {
         "start": "Looking up your account for your user name...",
         "end": "Retrieved your accounts"
@@ -117,22 +117,22 @@ class ChatKitEventsHandler:
         async for event in events:
                 
             # Skip non-text events
-            if(isinstance(event, WorkflowStatusEvent) \
-            or isinstance(event, ExecutorInvokedEvent) ) \
-            or isinstance(event, ExecutorCompletedEvent) \
-            or isinstance(event, SuperStepStartedEvent) \
-            or isinstance(event, SuperStepCompletedEvent) \
-            or isinstance(event, RequestInfoEvent):
+            if(event.type == "status" \
+            or event.type == "executor_invoked" ) \
+            or event.type == "executor_completed" \
+            or event.type == "superstep_started" \
+            or event.type == "superstep_completed" \
+            or event.type == "request_info":
                 continue    
             
             #TODO: need to handle WorkflowFailedEvent
-            if isinstance(event, HandoffSentEvent): 
-               descriptive_title = f"Connected to {event.target} "
+            if event.type == "handoff_sent":  
+               descriptive_title = f"Connected to {event.data.target} "
                handoff_result_task = CustomTask(title=descriptive_title, icon="check-circle-filled")
                taskResultUpdate =  TaskItem(thread_id=thread_id,id=f"tsk_{uuid.uuid4().hex[:8]}", task=handoff_result_task, created_at=datetime.now())
                yield ThreadItemAddedEvent(item=taskResultUpdate) 
 
-            if isinstance(event, AgentRunUpdateEvent):
+            if event.type == "output":
                 if isinstance(event.data, AgentResponseUpdate) \
                 and event.executor_id != "triage_agent" \
                 and event.data is not None and isinstance(event.data, AgentResponseUpdate) \
@@ -209,7 +209,7 @@ class ChatKitEventsHandler:
 
 
             else:
-                event_description = event_description_map.get(event.__class__.__name__, event.__class__.__name__)
+                event_description = event_description_map.get(event.type, event.type)
                 progressUpdate = ProgressUpdateEvent(text=event_description, icon="atom")
                 yield progressUpdate
 

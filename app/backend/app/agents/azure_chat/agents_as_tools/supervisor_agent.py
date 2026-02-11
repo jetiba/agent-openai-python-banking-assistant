@@ -1,5 +1,5 @@
 from typing import Any, AsyncGenerator
-from agent_framework import ChatAgent
+from agent_framework import Agent
 from agent_framework.exceptions import AgentThreadException
 from agent_framework.azure import AzureOpenAIChatClient
 from app.agents.azure_chat.account_agent import AccountAgent
@@ -51,10 +51,10 @@ class SupervisorAgent :
      
         
 
-    def _build_af_agent(self) -> ChatAgent:
+    def _build_af_agent(self) -> Agent:
       
-      return ChatAgent(
-            chat_client=self.azure_chat_client,
+      return Agent(
+            client=self.azure_chat_client,
             instructions=SupervisorAgent.instructions,
             name=SupervisorAgent.name,
             tools=[self.route_to_account_agent,self.route_to_transaction_agent,self.route_to_payment_agent]
@@ -126,7 +126,7 @@ class SupervisorAgent :
 
           try:
               # Use streaming
-              async for chunk in agent.run_stream(user_message, thread=supervisor_resumed_thread):
+              async for chunk in agent.run(user_message, thread=supervisor_resumed_thread, stream=True):
                   if hasattr(chunk, 'text') and chunk.text:
                       content = chunk.text
                       full_response += content

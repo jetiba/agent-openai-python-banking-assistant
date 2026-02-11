@@ -1,7 +1,7 @@
 from azure.core.credentials import TokenCredential
-from agent_framework.azure import AzureAIAgentClient
+from agent_framework.azure import AzureAIProjectAgentOptions, AzureAIProjectAgentProvider
 from azure.ai.projects import AIProjectClient
-from agent_framework import ChatAgent, MCPStreamableHTTPTool
+from agent_framework import Agent, MCPStreamableHTTPTool
 from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoiceScanHelper
 from app.config.azure_credential import get_azure_credential_async
 from datetime import datetime
@@ -67,26 +67,22 @@ class PaymentAgent :
     name = "PaymentAgent"
     description = "This agent manages user payments related information such as submitting payment requests and bill payments."
 
-    def __init__(self, foundry_project_client: AIProjectClient,
+    def __init__(self, foundry_project_provider: AzureAIProjectAgentProvider,
                   chat_deployment_name:str,
                   account_mcp_server_url: str,
                   transaction_mcp_server_url: str,
                   payment_mcp_server_url: str,
-                  document_scanner_helper : DocumentIntelligenceInvoiceScanHelper,
-                  foundry_endpoint: str  ):
-        self.foundry_project_client = foundry_project_client
+                  document_scanner_helper : DocumentIntelligenceInvoiceScanHelper ):
+        self.foundry_project_provider = foundry_project_provider
         self.account_mcp_server_url = account_mcp_server_url
+        self.chat_deployment_name = chat_deployment_name
         self.transaction_mcp_server_url = transaction_mcp_server_url
         self.payment_mcp_server_url = payment_mcp_server_url
-        self.foundry_endpoint = foundry_endpoint
         self.document_scanner_helper = document_scanner_helper
         
-        self.created_agent = foundry_project_client.agents.create_agent(
-            model=chat_deployment_name, name=PaymentAgent.name, description=PaymentAgent.description
-        )
 
 
-    async def build_af_agent(self, thread_id: str | None) -> ChatAgent:
+    async def build_af_agent(self) -> Agent[AzureAIProjectAgentOptions]:
     
       logger.info("Building request scoped transaction agent run ")
       
@@ -118,11 +114,14 @@ class PaymentAgent :
         url=self.payment_mcp_server_url
      )
       await payment_mcp_server.connect()
-
-      chat_agent =  ChatAgent(
-            name=PaymentAgent.name,
-            chat_client=AzureAIAgentClient(thread_id=thread_id, project_endpoint=self.foundry_endpoint, async_credential=credential, agent_id=self.created_agent.id),
+      
+      agent =   await self.foundry_project_provider.create_agent(
+            model=self.chat_deployment_name, 
+            name=PaymentAgent.name, 
+            description=PaymentAgent.description,
             instructions=full_instruction,
-            tools=[account_mcp_server,transaction_mcp_server,payment_mcp_server,self.document_scanner_helper.scan_invoice]
-        ) 
-      return chat_agent
+            tools=[account_mcp_server,transaction_mcp_server,payment_mcp_server,self.document_scanner_helper.scan_invoice] #type: ignore
+        )
+
+      
+      return agent

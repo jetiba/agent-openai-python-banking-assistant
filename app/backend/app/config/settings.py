@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     # app-level
     APP_NAME: str = "Home Banking Multi-Agent Assistant"
     PROFILE: str = Field(default="prod")
-    AGENTS_TYPE: str = Field(default="foundry_v2")  # options: azure_chat, foundry_v1, foundry_v2
+    AGENTS_TYPE: str = Field(default="azure_chat")  # options: azure_chat, foundry_v1, foundry_v2
 
     #Logging and monitoring
     APPLICATIONINSIGHTS_CONNECTION_STRING: str | None = Field(default=None)

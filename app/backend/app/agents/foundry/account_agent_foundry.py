@@ -1,7 +1,6 @@
 from azure.core.credentials import TokenCredential
-from agent_framework.azure import AzureAIAgentClient
-from azure.ai.projects import AIProjectClient
-from agent_framework import ChatAgent, MCPStreamableHTTPTool
+from agent_framework.azure import AzureAIProjectAgentOptions, AzureAIProjectAgentProvider
+from agent_framework import Agent, MCPStreamableHTTPTool
 from app.config.azure_credential import get_azure_credential_async
 
 import logging
@@ -19,20 +18,19 @@ class AccountAgent :
     name = "AccountAgent"
     description = "This agent manages user accounts related information such as balance, credit cards."
 
-    def __init__(self, foundry_project_client: AIProjectClient, 
+    def __init__(self, foundry_project_provider: AzureAIProjectAgentProvider, 
                  chat_deployment_name:str,
-                 account_mcp_server_url: str,
-                 foundry_endpoint: str  ):
-        self.foundry_project_client = foundry_project_client
+                 account_mcp_server_url: str ):
+        self.foundry_project_provider = foundry_project_provider
         self.account_mcp_server_url = account_mcp_server_url
-        self.foundry_endpoint = foundry_endpoint
-        self.created_agent = foundry_project_client.agents.create_agent(
+        self.chat_deployment_name = chat_deployment_name
+        self.created_agent = foundry_project_provider.create_agent(
             model=chat_deployment_name, name=AccountAgent.name, description=AccountAgent.description
         )
         
 
 
-    async def build_af_agent(self, thread_id: str | None) -> ChatAgent:
+    async def build_af_agent(self) -> Agent[AzureAIProjectAgentOptions]:
 
       logger.info("Building request scoped Account agent run ")
 
@@ -50,10 +48,13 @@ class AccountAgent :
      )
       await account_mcp_server.connect()
 
-      chat_agent =  ChatAgent(
-            name=AccountAgent.name,
-            chat_client=AzureAIAgentClient(thread_id=thread_id, project_endpoint=self.foundry_endpoint, async_credential=credential, agent_id=self.created_agent.id),
+      agent =   await self.foundry_project_provider.create_agent(
+            model=self.chat_deployment_name,
+            name=AccountAgent.name, 
+            description=AccountAgent.description,
             instructions=full_instruction,
-            tools=[account_mcp_server]
-        ) 
-      return chat_agent
+            #TODO: pylance is not recognizing the type MCPStreamableHTTPTool as allowed FunctionTool
+            tools=[account_mcp_server] #type: ignore
+      )
+
+      return agent

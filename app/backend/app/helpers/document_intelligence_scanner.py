@@ -13,6 +13,7 @@ from app.config.settings import settings
 from app.config.azure_credential import get_azure_credential
 from app.helpers.blob_proxy import BlobStorageProxy
 from agent_framework._tools import tool
+from pydantic import Field
 
 logger = logging.getLogger(__name__)
 
@@ -145,14 +146,12 @@ class DocumentIntelligenceInvoiceScanHelper:
 
         return scan_data
 
-    # @tool(
-    # name="scan_invoice_tool", 
-    # description="function to scan invoice and bill documents and extract relevant fields",
-    # approval_mode="never_require")
+
+    @tool
     def scan_invoice(
         self, 
-        blob_name: Annotated[str, "the path to the file containing the image or photo or the attachment id"]
-    ) -> Annotated[str, "Returns a JSON string containing extracted invoice fields like VendorName, CustomerName, InvoiceId, InvoiceDate, and InvoiceTotal"]:
+        blob_name: Annotated[str, Field(description="the path to the file containing the image or photo or the attachment id")]
+    ) -> Annotated[str, Field(description="Returns a JSON string containing extracted invoice fields like VendorName, CustomerName, InvoiceId, InvoiceDate, and InvoiceTotal")]:
         """function to scan invoice and bill documents and extract relevant fields.
         """
         import json

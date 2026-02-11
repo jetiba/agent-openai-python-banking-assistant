@@ -7,7 +7,7 @@ from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.storage.blob import BlobServiceClient
 from app.helpers.blob_proxy import BlobStorageProxy
 from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoiceScanHelper
-from app.config.azure_credential import get_azure_credential, get_azure_credential_async
+from app.config.azure_credential import get_azure_credential, get_async_azure_credential
 from app.config.settings import settings
 
 # Azure AI Foundry based agent dependencies
@@ -16,6 +16,7 @@ from app.agents.foundry.transaction_agent_foundry import TransactionHistoryAgent
 from app.agents.foundry.payment_agent_foundry import PaymentAgent
 from app.agents.foundry.supervisor_agent_foundry import SupervisorAgent
 from agent_framework import MCPStreamableHTTPTool
+from agent_framework.azure import AzureAIProjectAgentProvider
 
 
 
@@ -57,54 +58,46 @@ class Container(containers.DeclarativeContainer):
     #Azure Agent Service based agents
 
     # Foundry Agent Creation
-    _foundry_project_client = AIProjectClient(settings.FOUNDRY_PROJECT_ENDPOINT, credential=get_azure_credential(), logging_enable=True)
+    _foundry_project_provider = AzureAIProjectAgentProvider(project_endpoint=settings.FOUNDRY_PROJECT_ENDPOINT, credential=get_async_azure_credential())
     
     # Account Agent with Azure AI Foundry
     _foundry_account_agent = providers.Singleton(
         AccountAgent,
-        foundry_project_client=_foundry_project_client,
+        foundry_project_provider=_foundry_project_provider,
         chat_deployment_name=settings.FOUNDRY_MODEL_DEPLOYMENT_NAME,
-        account_mcp_server_url=f"{settings.ACCOUNT_MCP_URL}/mcp",
-        foundry_endpoint=settings.FOUNDRY_PROJECT_ENDPOINT
+        account_mcp_server_url=f"{settings.ACCOUNT_MCP_URL}/mcp"
     )
 
     # Transaction History Agent with Azure AI Foundry
     _foundry_transaction_history_agent = providers.Singleton(
         TransactionHistoryAgent,
-        foundry_project_client=_foundry_project_client,
+        foundry_project_provider=_foundry_project_provider,
         chat_deployment_name=settings.FOUNDRY_MODEL_DEPLOYMENT_NAME,
         account_mcp_server_url=f"{settings.ACCOUNT_MCP_URL}/mcp",
-        transaction_mcp_server_url=f"{settings.TRANSACTION_MCP_URL}/mcp",
-        foundry_endpoint=settings.FOUNDRY_PROJECT_ENDPOINT
+        transaction_mcp_server_url=f"{settings.TRANSACTION_MCP_URL}/mcp"
     )
 
     # Payment Agent with Azure AI Foundry
     _foundry_payment_agent = providers.Singleton(
         PaymentAgent,
-        foundry_project_client=_foundry_project_client,
+        foundry_project_provider=_foundry_project_provider,
         chat_deployment_name=settings.FOUNDRY_MODEL_DEPLOYMENT_NAME,
         account_mcp_server_url=f"{settings.ACCOUNT_MCP_URL}/mcp",
         transaction_mcp_server_url=f"{settings.TRANSACTION_MCP_URL}/mcp",
         payment_mcp_server_url=f"{settings.PAYMENT_MCP_URL}/mcp",
-        document_scanner_helper=document_intelligence_scanner,
-        foundry_endpoint=settings.FOUNDRY_PROJECT_ENDPOINT
+        document_scanner_helper=document_intelligence_scanner
     )
 
-    # Creating the native foundry supervisor agent to get the agent id
-    _foundry_supervisor_native_agent = _foundry_project_client.agents.create_agent(
-            model=settings.FOUNDRY_MODEL_DEPLOYMENT_NAME, name=SupervisorAgent.name, description=SupervisorAgent.description
-    )
 
      # Supervisor Agent Azure AI to be used in agents-as-tool orchestration
     supervisor_agent = providers.Factory(
         SupervisorAgent,
-        foundry_project_client=_foundry_project_client,
+       foundry_project_provider=_foundry_project_provider,
         chat_deployment_name=settings.FOUNDRY_MODEL_DEPLOYMENT_NAME,
         account_agent=_foundry_account_agent,
         transaction_agent=_foundry_transaction_history_agent,
         payment_agent=_foundry_payment_agent,
-        foundry_endpoint=settings.FOUNDRY_PROJECT_ENDPOINT,
-        agent_id=_foundry_supervisor_native_agent.id
+        foundry_endpoint=settings.FOUNDRY_PROJECT_ENDPOINT
     )
 
    

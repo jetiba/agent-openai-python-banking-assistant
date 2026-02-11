@@ -1,5 +1,5 @@
 from agent_framework.azure import AzureAIClient
-from agent_framework import tool,ChatAgent, MCPStreamableHTTPTool
+from agent_framework import tool,Agent, MCPStreamableHTTPTool
 
 import logging
 
@@ -30,7 +30,7 @@ class AccountAgent :
 
 
 
-    async def build_af_agent(self)-> ChatAgent:
+    async def build_af_agent(self)-> Agent:
     
       logger.info("Initializing Account Agent connection for account api ")
       
@@ -49,8 +49,8 @@ class AccountAgent :
 
       #TODO: better error management  
       await account_mcp_server.connect()
-      agent = ChatAgent(
-            chat_client=self.azure_ai_client,
+      agent = Agent(
+            client=self.azure_ai_client,
             instructions=full_instruction,
             name=AccountAgent.name,
             tools=[account_mcp_server, handoff_to_triage_agent]

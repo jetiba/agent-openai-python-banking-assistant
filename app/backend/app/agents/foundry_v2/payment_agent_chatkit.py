@@ -1,5 +1,5 @@
 from agent_framework.azure import AzureAIClient
-from agent_framework import tool,ChatAgent, MCPStreamableHTTPTool
+from agent_framework import tool,Agent, MCPStreamableHTTPTool
 from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoiceScanHelper
 
 from datetime import datetime
@@ -59,7 +59,7 @@ class PaymentAgent :
         
 
 
-    async def build_af_agent(self) -> ChatAgent:
+    async def build_af_agent(self) -> Agent:
     
       logger.info("Building request scoped Payment agent run ")
       
@@ -91,8 +91,8 @@ class PaymentAgent :
      
       await payment_mcp_server.connect()
 
-      agent = ChatAgent(
-            chat_client=self.azure_ai_client,
+      agent = Agent(
+            client=self.azure_ai_client,
             instructions=full_instruction,
             name=PaymentAgent.name,
             tools=[account_mcp_server,
