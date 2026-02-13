@@ -1,9 +1,7 @@
-from azure.core.credentials import TokenCredential
-from agent_framework.azure import AzureAIProjectAgentOptions, AzureAIProjectAgentProvider
-from azure.ai.projects import AIProjectClient
+from agent_framework.azure import AzureOpenAIChatClient
 from agent_framework import Agent, MCPStreamableHTTPTool
 from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoiceScanHelper
-from app.config.azure_credential import get_azure_credential_async
+
 from datetime import datetime
 
 import logging
@@ -67,34 +65,30 @@ class PaymentAgent :
     name = "PaymentAgent"
     description = "This agent manages user payments related information such as submitting payment requests and bill payments."
 
-    def __init__(self, foundry_project_provider: AzureAIProjectAgentProvider,
-                  chat_deployment_name:str,
+    def __init__(self, azure_chat_client: AzureOpenAIChatClient,
                   account_mcp_server_url: str,
                   transaction_mcp_server_url: str,
                   payment_mcp_server_url: str,
-                  document_scanner_helper : DocumentIntelligenceInvoiceScanHelper ):
-        self.foundry_project_provider = foundry_project_provider
+                  document_scanner_helper : DocumentIntelligenceInvoiceScanHelper):
+        self.azure_chat_client = azure_chat_client
         self.account_mcp_server_url = account_mcp_server_url
-        self.chat_deployment_name = chat_deployment_name
         self.transaction_mcp_server_url = transaction_mcp_server_url
         self.payment_mcp_server_url = payment_mcp_server_url
         self.document_scanner_helper = document_scanner_helper
         
 
 
-    async def build_af_agent(self) -> Agent[AzureAIProjectAgentOptions]:
+    async def build_af_agent(self) -> Agent:
     
-      logger.info("Building request scoped transaction agent run ")
+      logger.info("Building request scoped Payment agent run ")
       
       user_mail="bob.user@contoso.com"
       current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
       full_instruction = PaymentAgent.instructions.format(user_mail=user_mail, current_date_time=current_date_time)
 
-      credential = await get_azure_credential_async()  
       
       
       logger.info("Initializing Account MCP server tools ")
-      #await self.account_mcp_server.__aenter__()
       account_mcp_server = MCPStreamableHTTPTool(
         name="Account MCP server client",
         url=self.account_mcp_server_url
@@ -114,14 +108,13 @@ class PaymentAgent :
         url=self.payment_mcp_server_url
      )
       await payment_mcp_server.connect()
-      
-      agent =   await self.foundry_project_provider.create_agent(
-            model=self.chat_deployment_name, 
-            name=PaymentAgent.name, 
-            description=PaymentAgent.description,
-            instructions=full_instruction,
-            tools=[account_mcp_server,transaction_mcp_server,payment_mcp_server,self.document_scanner_helper.scan_invoice] #type: ignore
-        )
 
-      
-      return agent
+      return Agent(
+            client=self.azure_chat_client,
+            instructions=full_instruction,
+            name=PaymentAgent.name,
+            tools=[account_mcp_server,
+                   transaction_mcp_server, 
+                   payment_mcp_server, 
+                   self.document_scanner_helper.scan_invoice]
+        )

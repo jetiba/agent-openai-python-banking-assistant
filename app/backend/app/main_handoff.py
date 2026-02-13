@@ -1,13 +1,16 @@
 from fastapi import FastAPI
-from .routers import chat_routers_handoff,auth_routers, content_routers
+from .routers.simple_chat import chat_routers_handoff,auth_routers, content_routers
 from app.config.settings import settings
 from app.config.logging import get_logger, setup_logging
-from agent_framework.observability import setup_observability
-# Foundry based dependency injection container
-#from app.config.container_foundry import Container
+from app.config.container_azure_chat import Container
+from azure.monitor.opentelemetry import configure_azure_monitor
+from agent_framework.observability import create_resource, enable_instrumentation
+
+
+enable_instrumentation()
 
 # Azure Chat based dependency injection container
-from app.config.container_azure_chat import Container
+
 
 
 
@@ -18,7 +21,11 @@ def create_app() -> FastAPI:
     logger = get_logger(__name__)
 
     # Setup agent framework observability
-    setup_observability(enable_sensitive_data=settings.ENABLE_OTEL,applicationinsights_connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING)
+    configure_azure_monitor(
+    connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING,
+    resource=create_resource(),
+    enable_live_metrics=True,
+    )
 
     logger.info(f"Creating FastAPI application: {settings.APP_NAME}")
     

@@ -13,7 +13,7 @@ class TransactionHistoryAgent :
     By default you should search the last 10 account transactions ordered by date.    
     If the user want to search last account transactions for a specific payee, extract it from the request and use it as filter.
     
-    Use html list or table to display the transaction information.
+    Use markdown list or table to display the transaction information.
     Always use the below logged user details to retrieve account info:
     {user_mail}
     Current timestamp:
@@ -40,22 +40,20 @@ class TransactionHistoryAgent :
       current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
       full_instruction = TransactionHistoryAgent.instructions.format(user_mail=user_mail, current_date_time=current_date_time)
 
-      logger.info("Initializing Account MCP server tools ")
-      #await self.account_mcp_server.__aenter__()
-      account_mcp_server = MCPStreamableHTTPTool(
-        name="Account MCP server client",
-        url=self.account_mcp_server_url
-     )
-      await account_mcp_server.connect()
-     
-      logger.info("Initializing Transaction MCP server tools ")
-      transaction_mcp_server = MCPStreamableHTTPTool(
-        name="Transaction MCP server client",
-        url=self.transaction_mcp_server_url
-     )
-      await transaction_mcp_server.connect()
-
-      return Agent(
+      logger.info("Initializing Account MCP, Transaction MCP server tools for TransactionHistoryAgent ")
+      
+      async with ( 
+        MCPStreamableHTTPTool(
+          name="Account MCP server client",
+          url=self.account_mcp_server_url
+       ) as account_mcp_server,
+        MCPStreamableHTTPTool(
+          name="Transaction MCP server client",
+          url=self.transaction_mcp_server_url
+     ) as transaction_mcp_server,
+      ):
+      
+        return Agent(
             client=self.azure_chat_client,
             instructions=full_instruction,
             name=TransactionHistoryAgent.name,

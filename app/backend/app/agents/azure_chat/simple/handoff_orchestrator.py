@@ -2,11 +2,11 @@ from typing import Any, AsyncGenerator
 from collections.abc import AsyncIterable
 from agent_framework import AgentResponseUpdate, Agent,InMemoryCheckpointStorage, ChatContext,WorkflowCheckpoint, WorkflowEvent
 from agent_framework.orchestrations import HandoffBuilder,HandoffAgentUserRequest
-from agent_framework.exceptions import AgentThreadException
+from agent_framework.exceptions import AgentFrameworkException
 from agent_framework.azure import AzureOpenAIChatClient
-from app.agents.azure_chat.account_agent import AccountAgent
-from app.agents.azure_chat.transaction_agent import TransactionHistoryAgent
-from app.agents.azure_chat.payment_agent import PaymentAgent
+from app.agents.azure_chat.simple.account_agent import AccountAgent
+from app.agents.azure_chat.simple.transaction_agent import TransactionHistoryAgent
+from app.agents.azure_chat.simple.payment_agent import PaymentAgent
 from uuid import uuid4
 import logging
 
@@ -109,9 +109,9 @@ class HandoffOrchestrator:
                         response = {event.request_id: user_message}
                         return self.workflow.send_responses_streaming(response) #type: ignore
                 else:
-                    raise AgentThreadException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint_id}] that is not a HandoffAgentUserRequest.")
+                    raise AgentFrameworkException(f"RequestInfoEvent [{event.request_id}] found in the checkpoint [{checkpoint_id}] that is not a HandoffAgentUserRequest.")
         #if we reach here, something went wrong. For this use case HandoffOrchestrator expected to always trigger a RequestInfoEvent.
-        raise AgentThreadException(f"No RequestInfoEvent found in the checkpoint [{checkpoint_id}]")
+        raise AgentFrameworkException(f"No RequestInfoEvent found in the checkpoint [{checkpoint_id}]")
             
     
     async def processMessageStream(self, user_message: str , thread_id : str | None) -> AsyncGenerator[tuple[str, bool, str | None], None]:
@@ -147,7 +147,7 @@ class HandoffOrchestrator:
             checkpoint = HandoffOrchestrator.thread_checkpoint_store.get(thread_id, None)
 
             if checkpoint is None:
-                raise AgentThreadException(f"No checkpoint found for thread_id: {thread_id}")
+                raise AgentFrameworkException(f"No checkpoint found for thread_id: {thread_id}")
                 
             events = await self._resume_workflow_with_response(checkpoint.checkpoint_id, user_message)  
             
@@ -159,7 +159,7 @@ class HandoffOrchestrator:
          checkpoints = await self.checkpoint_storage.list_checkpoints(workflow_id=thread_id) # type: ignore
          last_checkpoint = checkpoints[-1] if checkpoints else None
          if last_checkpoint is None:
-            raise AgentThreadException(f"No checkpoint found after completing the first conversation for thread_id: {thread_id}")
+            raise AgentFrameworkException(f"No checkpoint found after completing the first conversation for thread_id: {thread_id}")
          #saving the last checkpoint for the conversation thread using workflow_id as thread_id
          HandoffOrchestrator.thread_checkpoint_store[thread_id] = last_checkpoint # type: ignore
          yield ("", True, thread_id) # type: ignore

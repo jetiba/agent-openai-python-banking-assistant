@@ -10,10 +10,10 @@ from chatkit.types import (
 )
 
 if settings.AGENTS_TYPE == "azure_chat":
-    from app.agents.azure_chat.handoff.chatkit.handoff_orchestrator_chatkit import HandoffOrchestrator
+    from app.agents.azure_chat.handoff_orchestrator import HandoffOrchestrator
     from app.config.container_azure_chat import Container
 elif settings.AGENTS_TYPE == "foundry_v2":
-    from app.agents.foundry_v2.handoff_orchestrator_chatkit import HandoffOrchestrator
+    from app.agents.foundry_v2.handoff_orchestrator import HandoffOrchestrator
     from app.config.container_foundry_v2 import Container
 else:
     raise ValueError(f"Unsupported AGENTS_TYPE: {settings.AGENTS_TYPE}")

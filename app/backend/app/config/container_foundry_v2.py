@@ -14,10 +14,10 @@ from app.config.settings import settings
 
 
 #Azure AI Foundry V2 agents for ChatKit protocol
-from app.agents.foundry_v2.handoff_orchestrator_chatkit import HandoffOrchestrator as HandoffOrchestratorChatKit
-from app.agents.foundry_v2.account_agent_chatkit import AccountAgent as AccountAgentChatKit
-from app.agents.foundry_v2.transaction_agent_chatkit import TransactionHistoryAgent as TransactionHistoryAgentChatKit
-from app.agents.foundry_v2.payment_agent_chatkit import PaymentAgent as PaymentAgentChatKit
+from app.agents.foundry_v2.handoff_orchestrator import HandoffOrchestrator as HandoffOrchestratorChatKit
+from app.agents.foundry_v2.account_agent import AccountAgent as AccountAgentChatKit
+from app.agents.foundry_v2.transaction_agent import TransactionHistoryAgent as TransactionHistoryAgentChatKit
+from app.agents.foundry_v2.payment_agent import PaymentAgent as PaymentAgentChatKit
 
 
 class Container(containers.DeclarativeContainer):
@@ -65,7 +65,7 @@ class Container(containers.DeclarativeContainer):
     )
 
    
-    #Account Agent with Azure chat based agents. Can be singleton as thread state is passed to the underlying agent run method
+    #Account Agent with Azure chat based agents.
     account_agent_chatkit = providers.Factory(
     AccountAgentChatKit,
     azure_ai_client=_azure_ai_client,
@@ -88,7 +88,8 @@ class Container(containers.DeclarativeContainer):
     document_scanner_helper=document_intelligence_scanner
     )
 
-    #A specialized chatkit Supervisor Agent implemented using agent framework handoff built-in orchestration with Azure chat based agents. A per request instance is created as based on recommendation from agent framework team about managing workflow instance.
+    # A specialized chatkit Supervisor Agent implemented using agent framework handoff built-in orchestration with Azure chat based agents. 
+    # A per request instance is created as based on recommendation from agent framework team about managing workflow instance.
     handoff_orchestrator_chatkit = providers.Factory(
         HandoffOrchestratorChatKit,
         azure_ai_client=_azure_ai_client,

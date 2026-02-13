@@ -1,5 +1,5 @@
-from agent_framework.azure import AzureOpenAIChatClient
-from agent_framework import Agent, MCPStreamableHTTPTool
+from agent_framework.azure import AzureAIClient
+from agent_framework import tool,Agent, MCPStreamableHTTPTool
 from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoiceScanHelper
 
 from datetime import datetime
@@ -8,6 +8,13 @@ import logging
 
 
 logger = logging.getLogger(__name__)
+
+@tool(
+    name="handoff_to_TriageAgent", description="Handoff to the triage-agent agent."
+)
+def handoff_to_triage_agent(context: str | None = None) -> str:
+    """Transfer the conversation back to the triage agent."""
+    return "Handoff to TriageAgent"
 
 class PaymentAgent :
     instructions = """
@@ -39,12 +46,12 @@ class PaymentAgent :
     name = "PaymentAgent"
     description = "This agent manages user payments related information such as submitting payment requests and bill payments."
 
-    def __init__(self, azure_chat_client: AzureOpenAIChatClient,
+    def __init__(self, azure_ai_client: AzureAIClient,
                   account_mcp_server_url: str,
                   transaction_mcp_server_url: str,
                   payment_mcp_server_url: str,
                   document_scanner_helper : DocumentIntelligenceInvoiceScanHelper):
-        self.azure_chat_client = azure_chat_client
+        self.azure_ai_client = azure_ai_client
         self.account_mcp_server_url = account_mcp_server_url
         self.transaction_mcp_server_url = transaction_mcp_server_url
         self.payment_mcp_server_url = payment_mcp_server_url
@@ -59,38 +66,38 @@ class PaymentAgent :
       user_mail="bob.user@contoso.com"
       current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
       full_instruction = PaymentAgent.instructions.format(user_mail=user_mail, current_date_time=current_date_time)
-
       
+      logger.info("Initializing Account MCP, Transaction MCP, Payment MCP server tools for PaymentAgent") 
       
-      logger.info("Initializing Account MCP server tools ")
-      account_mcp_server = MCPStreamableHTTPTool(
-        name="Account MCP server client",
-        url=self.account_mcp_server_url
-     )
-      await account_mcp_server.connect()
-     
-      logger.info("Initializing Transaction MCP server tools ")
-      transaction_mcp_server = MCPStreamableHTTPTool(
-        name="Transaction MCP server client",
-        url=self.transaction_mcp_server_url
-     )
-      await transaction_mcp_server.connect()
+      async with (
+        MCPStreamableHTTPTool(
+          name="Account MCP server client",
+          url=self.account_mcp_server_url
+        ) as account_mcp_server, 
+        MCPStreamableHTTPTool(
+          name="Transaction MCP server client",
+          url=self.transaction_mcp_server_url
+        ) as transaction_mcp_server, 
+         MCPStreamableHTTPTool(
+          name="Payment MCP server client",
+          url=self.payment_mcp_server_url,
+          approval_mode = { "always_require_approval": ["processPayment"] }
+        ) as payment_mcp_server,
+      ):
 
-      logger.info("Initializing Payment  MCP server tools ")
-      payment_mcp_server = MCPStreamableHTTPTool(
-        name="Payment MCP server client",
-        url=self.payment_mcp_server_url,
-        approval_mode = { "always_require_approval": ["processPayment"] })
-     
-      await payment_mcp_server.connect()
-
-      return Agent(
-            client=self.azure_chat_client,
-            instructions=full_instruction,
-            name=PaymentAgent.name,
-            tools=[account_mcp_server,
-                   transaction_mcp_server, 
-                   payment_mcp_server,
-                  self.document_scanner_helper.scan_invoice])
-            
-        
+        agent = Agent(
+                client=self.azure_ai_client,
+                instructions=full_instruction,
+                name=PaymentAgent.name,
+                tools=[account_mcp_server,
+                    transaction_mcp_server, 
+                    payment_mcp_server,
+                    self.document_scanner_helper.scan_invoice,
+                    handoff_to_triage_agent])
+                
+        agent.default_options["tools"] = [account_mcp_server, 
+                                        transaction_mcp_server, 
+                                        payment_mcp_server,
+                                        self.document_scanner_helper.scan_invoice,
+                                        handoff_to_triage_agent]
+        return agent

@@ -92,6 +92,8 @@ param webContainerAppName string = ''
 param accountContainerAppName string = ''
 param transactionContainerAppName string = ''
 param paymentContainerAppName string = ''
+
+param agentsType string = 'foundry_v2' // options: azure_chat, foundry_v2
 param backendAppExists bool = false
 param webAppExists bool = false
 param accountAppExists bool = false
@@ -210,6 +212,10 @@ module backend 'app/backend.bicep' = {
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
         value: monitoring.outputs.applicationInsightsInstrumentationKey
+      }
+      {
+        name: 'AGENTS_TYPE'
+        value: agentsType
       }
      
     ]
@@ -466,6 +472,7 @@ output AZURE_DOCUMENT_INTELLIGENCE_RESOURCE_GROUP string = documentIntelligenceR
 output AZURE_STORAGE_ACCOUNT string = storage.outputs.name
 output AZURE_STORAGE_CONTAINER string = storageContainerName
 output AZURE_STORAGE_RESOURCE_GROUP string = storageResourceGroup.name
+output AGENTS_TYPE string = agentsType
 
 
 

@@ -4,9 +4,11 @@ from app.routers.chatkit import attachment_routers
 from app.routers.chatkit import chat_routers
 from app.config.settings import settings
 from app.config.logging import get_logger, setup_logging
-#from agent_framework.observability import setup_observability
-# Foundry based dependency injection container
-#from app.config.container_foundry import Container
+from azure.monitor.opentelemetry import configure_azure_monitor
+from agent_framework.observability import create_resource, enable_instrumentation
+
+
+enable_instrumentation()
 
 # Azure Chat based dependency injection container
 from app.config.container_azure_chat import Container
@@ -26,8 +28,11 @@ def create_app() -> FastAPI:
     logger = get_logger(__name__)
 
     # Setup agent framework observability
-    #commenting out for now due to observability api changes in agent-framework 1.0.0b260107. this should be replaced with configure  configure_otel_providers()
-    #setup_observability(enable_sensitive_data=settings.ENABLE_OTEL,applicationinsights_connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING)
+    configure_azure_monitor(
+    connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING,
+    resource=create_resource(),
+    enable_live_metrics=True,
+    )
 
     logger.info(f"Creating FastAPI application: {settings.APP_NAME}")
     
@@ -60,6 +65,7 @@ def create_app() -> FastAPI:
 
 
     logger.info("FastAPI application created successfully")
+    logger.info(f"Agents type: {settings.AGENTS_TYPE}")
     app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, specify exact origins

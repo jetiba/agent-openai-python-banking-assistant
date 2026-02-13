@@ -3,9 +3,9 @@
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 from agent_framework.azure import AzureAIClient
-from agent_framework import ChatAgent
+from agent_framework import Agent
 from azure.identity.aio import AzureCliCredential
-from app.agents.foundry_v2.account_agent_chatkit import AccountAgent
+from app.backend.app.agents.foundry_v2.account_agent import AccountAgent
 from app.config.settings import settings
 
 
@@ -64,7 +64,7 @@ class TestAccountAgent:
         print("Agent: ", end="", flush=True)
         
         response_chunks = []
-        async for chunk in agent.run_stream(query):
+        async for chunk in agent.run(query, stream=True):
             if chunk.text:
                 print(chunk.text, end="", flush=True)
                 response_chunks.append(chunk.text)

@@ -57,6 +57,10 @@
       ]
     }
     ,
+    "agentsType": {
+      "value": "foundry_v2"
+    }
+    ,
     "backendAppExists": {
       "value": false
     },

@@ -1,8 +1,5 @@
-from azure.core.credentials import TokenCredential
-from agent_framework.azure import AzureAIProjectAgentOptions, AzureAIProjectAgentProvider
-from azure.ai.projects import AIProjectClient
+from agent_framework.azure import AzureOpenAIChatClient
 from agent_framework import Agent, MCPStreamableHTTPTool
-from app.config.azure_credential import get_azure_credential_async
 from datetime import datetime
 
 import logging
@@ -25,15 +22,13 @@ class TransactionHistoryAgent :
     name = "TransactionHistoryAgent"
     description = "This agent manages user transactions related information such as banking movements and payments history"
 
-    def __init__(self, foundry_project_provider: AzureAIProjectAgentProvider, 
-                 chat_deployment_name:str,
+    def __init__(self, azure_chat_client: AzureOpenAIChatClient,
                  account_mcp_server_url: str,
                  transaction_mcp_server_url: str,
-                 foundry_endpoint: str  ):
-        self.foundry_project_provider = foundry_project_provider
+                  ):
+        self.azure_chat_client = azure_chat_client
         self.account_mcp_server_url = account_mcp_server_url
         self.transaction_mcp_server_url = transaction_mcp_server_url
-        self.chat_deployment_name = chat_deployment_name
       
 
 
@@ -45,8 +40,6 @@ class TransactionHistoryAgent :
       current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
       full_instruction = TransactionHistoryAgent.instructions.format(user_mail=user_mail, current_date_time=current_date_time)
 
-      credential = await get_azure_credential_async()  
-    
       logger.info("Initializing Account MCP server tools ")
       #await self.account_mcp_server.__aenter__()
       account_mcp_server = MCPStreamableHTTPTool(
@@ -62,12 +55,9 @@ class TransactionHistoryAgent :
      )
       await transaction_mcp_server.connect()
 
-      agent =  await self.foundry_project_provider.create_agent(
-            model=self.chat_deployment_name, 
-            name=TransactionHistoryAgent.name, 
-            description=TransactionHistoryAgent.description,
+      return Agent(
+            client=self.azure_chat_client,
             instructions=full_instruction,
-            tools=[account_mcp_server, transaction_mcp_server] #type: ignore
+            name=TransactionHistoryAgent.name,
+            tools=[account_mcp_server, transaction_mcp_server],
         )
-      
-      return agent    

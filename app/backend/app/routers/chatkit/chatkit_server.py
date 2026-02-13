@@ -37,14 +37,14 @@ from chatkit.types import (
 
 from chatkit.widgets import Card
 
-from app.agents.azure_chat.handoff.chatkit.handoff_orchestrator_chatkit import HandoffOrchestrator
+from app.agents.azure_chat.handoff_orchestrator import HandoffOrchestrator
 
 
 if settings.AGENTS_TYPE == "azure_chat":
-    from app.agents.azure_chat.handoff.chatkit.handoff_orchestrator_chatkit import HandoffOrchestrator
-    from app.agents.azure_chat.handoff.chatkit._chatkit_events_handler import ChatKitEventsHandler
+    from app.agents.azure_chat.handoff_orchestrator import HandoffOrchestrator
+    from app.agents.azure_chat._chatkit_events_handler import ChatKitEventsHandler
 elif settings.AGENTS_TYPE == "foundry_v2":
-    from app.agents.foundry_v2.handoff_orchestrator_chatkit import HandoffOrchestrator
+    from app.agents.foundry_v2.handoff_orchestrator import HandoffOrchestrator
     from app.agents.foundry_v2._chatkit_events_handler import ChatKitEventsHandler
 else:
     raise ValueError(f"Unsupported AGENTS_TYPE: {settings.AGENTS_TYPE}")

@@ -11,21 +11,19 @@ from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoic
 from app.config.azure_credential import get_azure_credential, get_azure_credential_async
 from app.config.settings import settings
 
-#Azure Chat based agent dependencies
-from app.agents.azure_chat.account_agent import AccountAgent
-from app.agents.azure_chat.transaction_agent import TransactionHistoryAgent
-from app.agents.azure_chat.payment_agent import PaymentAgent
-from app.agents.azure_chat.agents_as_tools.supervisor_agent import SupervisorAgent
-from app.agents.azure_chat.handoff.handoff_orchestrator import HandoffOrchestrator
+#Azure Chat based agents for simple handoff
+from app.agents.azure_chat.simple.account_agent import AccountAgent
+from app.agents.azure_chat.simple.transaction_agent import TransactionHistoryAgent
+from app.agents.azure_chat.simple.payment_agent import PaymentAgent
+from app.agents.azure_chat.simple.handoff_orchestrator import HandoffOrchestrator
 
-#Azure Chat for ChatKit protocol
-from app.agents.azure_chat.handoff.chatkit.handoff_orchestrator_chatkit import HandoffOrchestrator as HandoffOrchestratorChatKit
-from app.agents.azure_chat.handoff.chatkit.account_agent_chatkit import AccountAgent as AccountAgentChatKit
-from app.agents.azure_chat.handoff.chatkit.transaction_agent_chatkit import TransactionHistoryAgent as TransactionHistoryAgentChatKit
-from app.agents.azure_chat.handoff.chatkit.payment_agent_chatkit import PaymentAgent as PaymentAgentChatKit
+#Azure Chat based agents for handoff with ChatKit protocol
+from app.agents.azure_chat.handoff_orchestrator import HandoffOrchestrator as HandoffOrchestratorChatKit
+from app.agents.azure_chat.account_agent import AccountAgent as AccountAgentChatKit
+from app.agents.azure_chat.transaction_agent import TransactionHistoryAgent as TransactionHistoryAgentChatKit
+from app.agents.azure_chat.payment_agent import PaymentAgent as PaymentAgentChatKit
 
 from agent_framework.azure import AzureOpenAIChatClient
-from agent_framework import MCPStreamableHTTPTool
 
 
 
@@ -70,20 +68,20 @@ class Container(containers.DeclarativeContainer):
     )
 
     #Account Agent with Azure chat based agents. Can be singleton as thread state is passed to the underlying agent run method
-    account_agent = providers.Singleton(
+    account_agent = providers.Factory(
     AccountAgent,
     azure_chat_client=_azure_chat_client,
     account_mcp_server_url=f"{settings.ACCOUNT_MCP_URL}/mcp"
     )
 
-    transaction_agent = providers.Singleton(
+    transaction_agent = providers.Factory(
     TransactionHistoryAgent,
     azure_chat_client=_azure_chat_client,
     account_mcp_server_url=f"{settings.ACCOUNT_MCP_URL}/mcp",
     transaction_mcp_server_url=f"{settings.TRANSACTION_MCP_URL}/mcp"
     )
 
-    payment_agent = providers.Singleton(
+    payment_agent = providers.Factory(
     PaymentAgent,
     azure_chat_client=_azure_chat_client,
     account_mcp_server_url=f"{settings.ACCOUNT_MCP_URL}/mcp",
@@ -92,15 +90,7 @@ class Container(containers.DeclarativeContainer):
     document_scanner_helper=document_intelligence_scanner
     )
 
-    #Supervisor Agent implemented with agents-as-tools approach using Azure chat based agents. A per request instance is created as it holds the thread state
-    supervisor_agent = providers.Factory(
-        SupervisorAgent,
-        azure_chat_client=_azure_chat_client,
-        account_agent=account_agent,
-        transaction_agent=transaction_agent,
-        payment_agent=payment_agent
-    )
-
+  
     #Supervisor Agent implemented using agent framework handoff built-in orchestration with Azure chat based agents. A per request instance is created as based on recommendation from agent framework team about managing workflow instance.
     handoff_orchestrator = providers.Factory(
         HandoffOrchestrator,
@@ -135,7 +125,8 @@ class Container(containers.DeclarativeContainer):
     document_scanner_helper=document_intelligence_scanner
     )
 
-    #A specialized chatkit Supervisor Agent implemented using agent framework handoff built-in orchestration with Azure chat based agents. A per request instance is created as based on recommendation from agent framework team about managing workflow instance.
+    # A specialized chatkit Supervisor Agent implemented using agent framework handoff built-in orchestration with Azure chat based agents. 
+    # A per request instance is created as based on recommendation from agent framework team about managing workflow instance.
     handoff_orchestrator_chatkit = providers.Factory(
         HandoffOrchestratorChatKit,
         azure_chat_client=_azure_chat_client,

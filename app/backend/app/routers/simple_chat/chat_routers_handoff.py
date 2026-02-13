@@ -7,7 +7,7 @@ import logging
 #from app.config.container_foundry import Container
 
 # Azure Chat based agents dependencies
-from app.agents.azure_chat.handoff.handoff_orchestrator import HandoffOrchestrator
+from app.backend.app.agents.azure_chat.simple.handoff_orchestrator import HandoffOrchestrator
 from app.config.container_azure_chat import Container
 
 from app.models.chat import ChatAppRequest, ChatResponse, ChatResponseMessage, ChatChoice, ChatContext, ChatDelta

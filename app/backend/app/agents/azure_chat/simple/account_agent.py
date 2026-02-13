@@ -1,31 +1,23 @@
-from agent_framework.azure import AzureAIClient
-from agent_framework import tool,Agent, MCPStreamableHTTPTool
+from agent_framework.azure import AzureOpenAIChatClient
+from agent_framework import Agent, MCPStreamableHTTPTool
 
 import logging
 
 
 logger = logging.getLogger(__name__)
 
-@tool(
-    name="handoff_to_TriageAgent", description="Handoff to the triage-agent agent."
-)
-def handoff_to_triage_agent(context: str | None = None) -> str:
-    """Transfer the conversation back to the triage agent."""
-    return "Handoff to TriageAgent"
-
 class AccountAgent :
     instructions = """
     you are a personal financial advisor who help the user to retrieve information about their bank accounts.
-    Always use markdown to format your response.
+    Use html list or table to display the account information.
     Always use the below logged user details to retrieve account info:
     {user_mail}
     """
     name = "AccountAgent"
     description = "This agent manages user accounts related information such as balance, credit cards."
-   
 
-    def __init__(self, azure_ai_client: AzureAIClient, account_mcp_server_url: str):
-        self.azure_ai_client = azure_ai_client
+    def __init__(self, azure_chat_client: AzureOpenAIChatClient, account_mcp_server_url: str):
+        self.azure_chat_client = azure_chat_client
         self.account_mcp_server_url = account_mcp_server_url
 
 
@@ -36,25 +28,17 @@ class AccountAgent :
       
       user_mail="bob.user@contoso.com"
       full_instruction = AccountAgent.instructions.format(user_mail=user_mail)
-
-      # account_mcp_server = MCPStreamableHTTPTool(
-      #        name="Account MCP server client",
-      #        url=self.account_mcp_server_url,
-      #        approval_mode = { "always_require_approval": ["getAccountsByUserName"] })
       
       account_mcp_server = MCPStreamableHTTPTool(
                 name="Account MCP server client",
                 url=self.account_mcp_server_url)
       logger.info("Initializing Account MCP server tools ")
 
-      #TODO: better error management  
       await account_mcp_server.connect()
-      agent = Agent(
-            client=self.azure_ai_client,
+      return Agent(
+            client=self.azure_chat_client,
             instructions=full_instruction,
             name=AccountAgent.name,
-            tools=[account_mcp_server, handoff_to_triage_agent]
+            tools=[account_mcp_server]
         )
-      agent.default_options["tools"] = [account_mcp_server, handoff_to_triage_agent]
-      return agent
     
