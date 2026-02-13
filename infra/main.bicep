@@ -176,13 +176,12 @@ module backend 'app/backend.bicep' = {
         name: 'AZURE_STORAGE_CONTAINER'
         value: storageContainerName
       }
-     
       {
-        name: 'FOUNDRY_PROJECT_ENDPOINT'
+        name: 'AZURE_AI_PROJECT_ENDPOINT'
         value:  '${aiFoundry.outputs.endpoint}api/projects/${aiFoundry.outputs.aiProjectName}/'
       }
       {
-        name: 'FOUNDRY_MODEL_DEPLOYMENT_NAME'
+        name: 'AZURE_AI_MODEL_DEPLOYMENT_NAME'
         value: models[0].deploymentName
       }
       {
