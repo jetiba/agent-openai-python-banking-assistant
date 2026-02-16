@@ -229,4 +229,4 @@ az containerapp ingress traffic set \
 
 ## What's Next
 
-In **Lab 4**, you'll configure **ingress** rules, **health probes**, and **scaling** to make your APIs production-ready.
+In **Lab 4**, you'll enable **Azure Monitor OpenTelemetry** for structured logging, deploy an **Application Insights Dashboard**, and learn to query your services with **KQL**.

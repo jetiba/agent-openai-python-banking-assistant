@@ -23,8 +23,8 @@ This copies the lab's new and modified files into the root. You always run `azd 
 | [Lab 1](labs/lab-01/README.md) | Deploy Your First Container App | Account API with ACR, ACA Environment, monitoring |
 | [Lab 2](labs/lab-02/README.md) | Add Microservices & Frontend | Transaction API, Payment API, React web frontend |
 | [Lab 3](labs/lab-03/README.md) | Revisions & Traffic Splitting | Multiple revision mode, canary deployments, rollback |
-| Lab 4 | *Coming soon* | Ingress, health probes, scaling |
-| Lab 5 | *Coming soon* | Custom domains, authentication |
+| [Lab 4](labs/lab-04/README.md) | Logging & Monitoring | Azure Monitor OpenTelemetry, App Insights dashboard, KQL queries |
+| Lab 5 | *Coming soon* | Built-in Authentication & Azure Key Vault integration |
 
 ### Part 2 — AI Components
 
@@ -83,7 +83,8 @@ azd up
 └── labs/
     ├── lab-01/                 # Lab 1 instructions (root IS Lab 1)
     ├── lab-02/                 # Lab 2 delta: +transaction, +payment, +frontend
-    └── lab-03/                 # Lab 3 delta: revisions & traffic splitting
+    ├── lab-03/                 # Lab 3 delta: revisions & traffic splitting
+    └── lab-04/                 # Lab 4 delta: logging & monitoring
 ```
 
 ## How the Delta Model Works
