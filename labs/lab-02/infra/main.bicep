@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
-// Lab 1 – Deploy Your First Container App
-// Resources: Resource Group, Log Analytics, App Insights, ACR, ACA Env, Account API
+// Lab 2 – Add Transaction, Payment APIs & Frontend
+// Resources: everything from Lab 1 + Transaction API + Payment API + Web frontend
 // ---------------------------------------------------------------------------
 
 targetScope = 'subscription'
@@ -21,6 +21,13 @@ param containerAppsEnvironmentName string = ''
 param containerRegistryName string = ''
 param accountContainerAppName string = ''
 param accountAppExists bool = false
+// ---- NEW in Lab 2 ----
+param transactionContainerAppName string = ''
+param transactionAppExists bool = false
+param paymentContainerAppName string = ''
+param paymentAppExists bool = false
+param webContainerAppName string = ''
+param webAppExists bool = false
 
 var abbrs = loadJsonContent('./shared/abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
@@ -67,7 +74,7 @@ module containerApps './shared/host/container-apps.bicep' = {
 }
 
 // ---------------------------------------------------------------------------
-// Account API  (single container app with external ingress)
+// Account API
 // ---------------------------------------------------------------------------
 module account 'app/account.bicep' = {
   name: 'account'
@@ -86,6 +93,66 @@ module account 'app/account.bicep' = {
 }
 
 // ---------------------------------------------------------------------------
+// Transaction API  (NEW in Lab 2)
+// ---------------------------------------------------------------------------
+module transaction 'app/transaction.bicep' = {
+  name: 'transaction'
+  scope: resourceGroup
+  params: {
+    name: !empty(transactionContainerAppName) ? transactionContainerAppName : '${abbrs.appContainerApps}transaction-${resourceToken}'
+    location: location
+    tags: tags
+    identityName: '${abbrs.managedIdentityUserAssignedIdentities}transaction-${resourceToken}'
+    applicationInsightsName: monitoring.outputs.applicationInsightsName
+    containerAppsEnvironmentName: containerApps.outputs.environmentName
+    containerRegistryName: containerApps.outputs.registryName
+    corsAcaUrl: ''
+    exists: transactionAppExists
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Payment API  (NEW in Lab 2 – depends on Transaction API)
+// ---------------------------------------------------------------------------
+module payment 'app/payment.bicep' = {
+  name: 'payment'
+  scope: resourceGroup
+  params: {
+    name: !empty(paymentContainerAppName) ? paymentContainerAppName : '${abbrs.appContainerApps}payment-${resourceToken}'
+    location: location
+    tags: tags
+    identityName: '${abbrs.managedIdentityUserAssignedIdentities}payment-${resourceToken}'
+    applicationInsightsName: monitoring.outputs.applicationInsightsName
+    containerAppsEnvironmentName: containerApps.outputs.environmentName
+    containerRegistryName: containerApps.outputs.registryName
+    corsAcaUrl: ''
+    exists: paymentAppExists
+    transactionApiUrl: transaction.outputs.SERVICE_API_URI
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Web Frontend  (NEW in Lab 2 – proxies to all APIs via nginx)
+// ---------------------------------------------------------------------------
+module web 'app/web.bicep' = {
+  name: 'web'
+  scope: resourceGroup
+  params: {
+    name: !empty(webContainerAppName) ? webContainerAppName : '${abbrs.appContainerApps}web-${resourceToken}'
+    location: location
+    tags: tags
+    identityName: '${abbrs.managedIdentityUserAssignedIdentities}web-${resourceToken}'
+    applicationInsightsName: monitoring.outputs.applicationInsightsName
+    containerAppsEnvironmentName: containerApps.outputs.environmentName
+    containerRegistryName: containerApps.outputs.registryName
+    exists: webAppExists
+    accountApiUrl: account.outputs.SERVICE_API_URI
+    transactionApiUrl: transaction.outputs.SERVICE_API_URI
+    paymentApiUrl: payment.outputs.SERVICE_API_URI
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Outputs
 // ---------------------------------------------------------------------------
 output AZURE_LOCATION string = location
@@ -95,3 +162,6 @@ output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerApps.outputs.environme
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerApps.outputs.registryLoginServer
 output AZURE_CONTAINER_REGISTRY_NAME string = containerApps.outputs.registryName
 output ACCOUNT_API_URL string = account.outputs.SERVICE_API_URI
+output TRANSACTION_API_URL string = transaction.outputs.SERVICE_API_URI
+output PAYMENT_API_URL string = payment.outputs.SERVICE_API_URI
+output WEB_APP_URL string = web.outputs.SERVICE_WEB_URI

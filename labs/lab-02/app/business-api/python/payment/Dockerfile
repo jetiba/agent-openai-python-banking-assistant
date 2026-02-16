@@ -14,12 +14,12 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY . .
 
 # Create virtual environment and install dependencies
-RUN uv venv --clear
+RUN uv venv  
 #RUN source .venv/bin/activate 
 RUN uv sync --active
 
 # Expose port
 EXPOSE 8080
 
-# Start the app with Python using the virtual environment
-CMD [".venv/bin/python", "main.py"]
+# Start the app with uvicorn using the virtual environment
+CMD [".venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

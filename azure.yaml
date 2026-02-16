@@ -1,44 +1,13 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 
-name: home-banking-assistant-python
+name: aca-workshop
 metadata:
-  template: home-banking-assistant-python@1.0.0-alpha
+  template: aca-workshop
+
 services:
-  backend:
-    project: ./app/backend
-    language: python
-    host: containerapp
-    docker:
-      remoteBuild: true
   account:
     project: ./app/business-api/python/account
+    host: containerapp
     language: python
-    host: containerapp
     docker:
-      remoteBuild: true
-  payment:
-    project: ./app/business-api/python/payment
-    language: python
-    host: containerapp
-    docker:
-      remoteBuild: true
-  transaction:
-    project: ./app/business-api/python/transaction
-    language: python
-    host: containerapp
-    docker:
-      remoteBuild: true
-# Uncomment/comment below lines to use the chatkit based frontend.Go to app/backend/Dockerfile and make sure to select the appropriate CMD line as well.
-  web:
-    project: app/frontend/banking-web
-    language: js
-    host: containerapp
-    docker:
-      remoteBuild: true
-# Uncomment/comment below lines to use the simple-chat frontend.Go to app/backend/Dockerfile and make sure to select the appropriate CMD line as well.
-  # web:
-  #   project: app/frontend/simple-chat
-  #   language: js
-  #   host: containerapp
-  #   docker:
-  #     remoteBuild: true
+      path: ./Dockerfile

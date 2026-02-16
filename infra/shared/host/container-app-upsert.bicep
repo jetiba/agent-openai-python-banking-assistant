@@ -71,6 +71,11 @@ param serviceBinds array = []
 @description('The target port for the container')
 param targetPort int = 80
 
+// ---- NEW in Lab 3: support revision mode passthrough ----
+@allowed([ 'Single', 'Multiple' ])
+@description('Controls whether the container app runs in single or multiple revision mode. Use Multiple for traffic splitting.')
+param revisionMode string = 'Single'
+
 resource existingApp 'Microsoft.App/containerApps@2023-05-02-preview' existing = if (exists) {
   name: name
 }
@@ -101,6 +106,7 @@ module app 'container-app.bicep' = {
     imageName: !empty(imageName) ? imageName : exists ? existingApp.properties.template.containers[0].image : ''
     targetPort: targetPort
     serviceBinds: serviceBinds
+    revisionMode: revisionMode  // ---- NEW in Lab 3 ----
   }
 }
 
