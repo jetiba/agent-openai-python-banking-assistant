@@ -310,4 +310,4 @@ traces
 
 ## What's Next
 
-In **Lab 5**, you'll add **built-in authentication** (Easy Auth) to your container apps and integrate **Azure Key Vault** to manage application secrets securely.
+In **[Lab 5](../lab-05/README.md)**, you'll add **built-in authentication** (Easy Auth) to your container apps and integrate **Azure Key Vault** to manage application secrets securely.
