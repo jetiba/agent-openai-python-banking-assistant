@@ -358,4 +358,4 @@ azd provision
 
 ## What's Next
 
-In **Lab 6**, you'll integrate **Azure AI Foundry** to add AI/ML capabilities to your banking assistant, connecting the backend services to large language models for intelligent responses.
+In [Lab 6](../lab-06/README.md), you'll set up **CI/CD with GitHub Actions** — configuring OIDC federation, automating deployments with `azd`, and building per-service pipelines with change detection.

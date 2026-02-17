@@ -25,16 +25,17 @@ This copies the lab's new and modified files into the root. You always run `azd 
 | [Lab 3](labs/lab-03/README.md) | Revisions & Traffic Splitting | Multiple revision mode, canary deployments, rollback |
 | [Lab 4](labs/lab-04/README.md) | Logging & Monitoring | Azure Monitor OpenTelemetry, App Insights dashboard, KQL queries |
 | [Lab 5](labs/lab-05/README.md) | Security | Azure Key Vault, managed identity secret access, Easy Auth |
+| [Lab 6](labs/lab-06/README.md) | CI/CD with GitHub Actions | OIDC federation, azd deploy, per-service pipelines, Bicep validation |
 
 ### Part 2 — AI Components
 
 | Lab | Topic | What You'll Build |
 |-----|-------|-------------------|
-| Lab 6 | *Coming soon* | AI Foundry + model deployment |
-| Lab 7 | *Coming soon* | AI backend agent |
-| Lab 8 | *Coming soon* | Multi-agent orchestration |
-| Lab 9 | *Coming soon* | MCP tool integration |
-| Lab 10 | *Coming soon* | Full banking assistant |
+| Lab 7 | *Coming soon* | AI Foundry + model deployment |
+| Lab 8 | *Coming soon* | AI backend agent |
+| Lab 9 | *Coming soon* | Multi-agent orchestration |
+| Lab 10 | *Coming soon* | MCP tool integration |
+| Lab 11 | *Coming soon* | Full banking assistant |
 
 ## Prerequisites
 
@@ -85,7 +86,8 @@ azd up
     ├── lab-02/                 # Lab 2 delta: +transaction, +payment, +frontend
     ├── lab-03/                 # Lab 3 delta: revisions & traffic splitting
     ├── lab-04/                 # Lab 4 delta: logging & monitoring
-    └── lab-05/                 # Lab 5 delta: Key Vault & Easy Auth
+    ├── lab-05/                 # Lab 5 delta: Key Vault & Easy Auth
+    └── lab-06/                 # Lab 6 delta: CI/CD with GitHub Actions
 ```
 
 ## How the Delta Model Works
