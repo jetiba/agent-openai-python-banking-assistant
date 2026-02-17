@@ -1,5 +1,5 @@
 # Use official Python slim image
-FROM python:3.11-slim-bookworm
+FROM --platform=linux/amd64 python:3.11-slim-bookworm
 
 # Set work directory
 WORKDIR /app
@@ -16,12 +16,9 @@ RUN uv sync --no-dev
 # Copy application code
 COPY . .
 
-# Create non-root user
-RUN useradd --create-home appuser
-USER appuser
-
 # Expose port
 EXPOSE 8080
 
 # Start the app
 CMD [".venv/bin/python", "main.py"]
+
