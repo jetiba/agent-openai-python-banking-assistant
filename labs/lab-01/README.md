@@ -141,9 +141,19 @@ Once complete, `azd` prints the Account API URL. Open `<url>/docs` to test.
     ├── lab-01/README.md                 # ← You are here
     ├── lab-02/                          # Delta for Lab 2
     └── lab-03/                          # Delta for Lab 3
+    └── lab-04/                          # Delta for Lab 4
+    └── lab-05/                          # Delta for Lab 5
+    └── lab-06/                          # Delta for Lab 6
+    └── lab-07/                          # Delta for Lab 7
+    └── lab-08/                          # Delta for Lab 8
+    └── lab-09/                          # Delta for Lab 9
+    └── lab-10/                          # Delta for Lab 10
+
+
+
 ```
 
-## Clean Up
+## Clean Up (Optional - or you can continue to Lab 2 from here)
 
 ```bash
 azd down --purge
