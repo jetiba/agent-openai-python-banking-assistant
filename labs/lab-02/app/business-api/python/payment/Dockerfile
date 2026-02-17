@@ -14,7 +14,7 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY . .
 
 # Create virtual environment and install dependencies
-RUN uv venv  
+RUN uv venv
 #RUN source .venv/bin/activate 
 RUN uv sync --active
 

@@ -108,7 +108,7 @@ async def get_version():
 ## Step 3 – Deploy the Updated Account API
 
 ```bash
-azd deploy account
+azd up
 ```
 
 This will:
@@ -229,4 +229,4 @@ az containerapp ingress traffic set \
 
 ## What's Next
 
-In **Lab 4**, you'll enable **Azure Monitor OpenTelemetry** for structured logging, deploy an **Application Insights Dashboard**, and learn to query your services with **KQL**.
+In **[Lab 4](../lab-04/README.md)**, you'll enable **Azure Monitor OpenTelemetry** for structured logging, deploy an **Application Insights Dashboard**, and learn to query your services with **KQL**.
