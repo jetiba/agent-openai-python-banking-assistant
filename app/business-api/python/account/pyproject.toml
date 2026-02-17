@@ -9,6 +9,8 @@ dependencies = [
     "fastmcp",
     "pydantic",
     "fastapi[all]==0.116.1",
-    "uvicorn"
+    "uvicorn",
+    "azure-monitor-opentelemetry",
+    "azure-identity",
+    "azure-keyvault-secrets",
 ]
-

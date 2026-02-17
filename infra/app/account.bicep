@@ -10,6 +10,10 @@ param serviceName string = 'account'
 param corsAcaUrl string
 param exists bool
 
+// ---- NEW in Lab 5: Key Vault ----
+@description('Azure Key Vault endpoint URI for secret retrieval')
+param keyVaultEndpoint string = ''
+
 @description('The environment variables for the container')
 param env array = []
 
@@ -34,12 +38,12 @@ module app '../shared/host/container-app-upsert.bicep' = {
     containerMemory: '2.0Gi'
     targetPort: 8080
     external: true
+    revisionMode: 'Multiple'  // ---- from Lab 3 ----
     env: union(env, [
       {
         name: 'AZURE_CLIENT_ID'
         value: apiIdentity.properties.clientId
       }
-      
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
         value: applicationInsights.properties.ConnectionString
@@ -47,6 +51,11 @@ module app '../shared/host/container-app-upsert.bicep' = {
       {
         name: 'API_ALLOW_ORIGINS'
         value: corsAcaUrl
+      }
+      // ---- NEW in Lab 5 ----
+      {
+        name: 'AZURE_KEY_VAULT_ENDPOINT'
+        value: keyVaultEndpoint
       }
     ])
     

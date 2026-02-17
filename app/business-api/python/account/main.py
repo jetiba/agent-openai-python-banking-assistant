@@ -2,6 +2,7 @@
 import os
 import logging
 from logging_config import configure_logging
+from keyvault_helper import verify_keyvault_access
 from mcp_tools import mcp
 from fastapi import FastAPI
 from routers import router as account_routers
@@ -13,7 +14,9 @@ def create_app() -> FastAPI:
     # Initialize logging for the app
     configure_logging()
     logger = logging.getLogger(__name__)
-    
+
+    # Verify Key Vault connectivity (non-blocking)
+    verify_keyvault_access()
   
    #Add mcp server to the FastAPI app
     mcp_app = mcp.http_app(path='/mcp')
