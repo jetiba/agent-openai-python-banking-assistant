@@ -18,11 +18,14 @@ def create_app() -> FastAPI:
     logger = get_logger(__name__)
 
     # Setup agent framework observability
-    configure_azure_monitor(
-        connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING,
-        resource=create_resource(),
-        enable_live_metrics=True,
-    )
+    if settings.APPLICATIONINSIGHTS_CONNECTION_STRING:
+        configure_azure_monitor(
+            connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING,
+            resource=create_resource(),
+            enable_live_metrics=True,
+        )
+    else:
+        logger.info("APPLICATIONINSIGHTS_CONNECTION_STRING not set — Azure Monitor disabled.")
 
     logger.info(f"Creating FastAPI application: {settings.APP_NAME}")
 
@@ -30,9 +33,6 @@ def create_app() -> FastAPI:
 
     # Initialize dependency injection container
     container = Container()
-
-    # Wire dependencies to modules that need them
-    container.wire(modules=[chat_routers])
 
     # Store container in app state for potential cleanup
     app.state.container = container
@@ -44,7 +44,6 @@ def create_app() -> FastAPI:
     async def lifespan(app: FastAPI):
         yield
         logger.info("Shutting down application...")
-        container.unwire()
 
     app.router.lifespan_context = lifespan
 

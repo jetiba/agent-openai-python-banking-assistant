@@ -1,7 +1,7 @@
 [project]
-name = "banking-assistant-backend"
+name = "banking-assistant-copilot-backend"
 version = "0.1.0"
-description = "A single AI agent exposed as chat service for the banking assistant frontend"
+description = "A multi-agent orchestration exposed as chat service for banking assistant frontend"
 readme = "README.md"
 requires-python = ">=3.11"
 
@@ -10,16 +10,27 @@ dependencies = [
     "uvicorn==0.35.0",
     "httpx==0.28.1",
     "azure-identity==1.24.0",
+    "azure-storage-blob==12.26.0",
+    "azure-ai-documentintelligence==1.0.1",
     "dependency-injector==4.48.1",
-    "agent-framework-core==1.0.0b260212",
-    "agent-framework-azure-ai==1.0.0b260212",
-    "agent-framework-chatkit==1.0.0b260212",
+    "agent-framework-core==1.0.0rc2",
+    "agent-framework-azure-ai==1.0.0rc2",
+    "agent-framework-orchestrations",
+    "agent-framework-devui",
+    "agent-framework-chatkit",
     "openai-chatkit==1.4.1",
-    "azure-monitor-opentelemetry"
+    "azure-monitor-opentelemetry",
+    "opentelemetry-semantic-conventions-ai==0.4.13"
+#   "azure-monitor-opentelemetry-exporter==1.0.0b46",
+#   "azure-monitor-opentelemetry==1.8.3"
 ]
 
 [tool.uv]
 prerelease = "if-necessary-or-explicit"
+# [tool.uv.sources]
+# "agent-framework-azure" = { git = "https://github.com/microsoft/agent-framework.git", branch = "main", subdirectory = "python/packages/azure-ai" }
+# "agent-framework-chatkit" = { git = "https://github.com/microsoft/agent-framework.git", branch = "main", subdirectory = "python/packages/chatkit" }
+# "agent-framework-core" = { git = "https://github.com/microsoft/agent-framework.git", branch = "main", subdirectory = "python/packages/core" }
 
 [project.optional-dependencies]
 dev = [
