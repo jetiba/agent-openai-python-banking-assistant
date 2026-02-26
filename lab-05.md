@@ -253,7 +253,7 @@ Then check the logs using the Azure Portal or the CLI:
 
 ```bash
 az containerapp logs show \
-  --name $(azd env get-value ACCOUNT_API_NAME 2>/dev/null || echo "ca-account-*") \
+  --name $(echo "$ACCOUNT_URL" | sed 's|https://\([^.]*\)\..*|\1|') \
   --resource-group $(azd env get-value AZURE_RESOURCE_GROUP) \
   --type console \
   --tail 20
