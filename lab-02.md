@@ -63,7 +63,21 @@ uv sync
 export TRANSACTIONS_API_SERVER_URL=http://localhost:8071
 uv run uvicorn main:app --reload --port 8072
 ```
-Open http://localhost:8072/docs – try `POST /api/payments` with a payment body.
+Open http://localhost:8072/docs – try `POST /api/payments` with a payment body, for example:
+
+```json
+{
+  "description": "Electric bill payment",
+  "recipientName": "Jane TheElectrician",
+  "recipientBankCode": "987654321",
+  "accountId": "1010",
+  "paymentType": "BankTransfer",
+  "amount": 150.00,
+  "timestamp": "2026-02-25T10:00:00",
+  "category": "utilities",
+  "status": "pending"
+}
+```
 
 **Frontend** (requires Account, Transaction, and Payment APIs running):
 ```bash
@@ -77,7 +91,12 @@ Open http://localhost:5170 – browse Dashboard, Accounts, Payments, and Credit 
 
 ### Step 3 – Deploy
 
+From the **repository root**:
+
 ```bash
+# (Optional) If you're still in the frontend directory from Step 2:
+cd ../../..
+
 azd up
 ```
 
@@ -100,4 +119,4 @@ This deploys all four services. The Payment container automatically receives the
 
 ---
 
-**Next** → [Lab 3: Revisions & Traffic Splitting](../lab-03/README.md)
+**Next** → [Lab 3: Revisions & Traffic Splitting](lab-03.md)

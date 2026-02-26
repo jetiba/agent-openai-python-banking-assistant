@@ -358,4 +358,4 @@ azd provision
 
 ## What's Next
 
-In [Lab 6](../lab-06/README.md), you'll set up **CI/CD with GitHub Actions** — configuring OIDC federation, automating deployments with `azd`, and building per-service pipelines with change detection.
+In [Lab 6](lab-06.md), you'll set up **CI/CD with GitHub Actions** — configuring OIDC federation, automating deployments with `azd`, and building per-service pipelines with change detection.
