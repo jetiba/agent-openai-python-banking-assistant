@@ -54,13 +54,14 @@ Open http://localhost:8080/docs and try the endpoints:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/accounts/{id}` | Get account details |
-| GET | `/api/accounts/{id}/payment-methods` | List payment methods |
-| GET | `/api/payment-methods/{id}` | Payment method details |
-| GET | `/api/accounts/{id}/beneficiaries` | List beneficiaries |
-| GET | `/api/accounts/{id}/cards` | List cards |
+| GET | `/api/accounts/{account_id}/cards` | List cards for an account |
+| GET | `/api/cards/{card_id}` | Get card details |
+| POST | `/api/cards/{card_id}/recharge` | Recharge a card |
+| POST | `/api/cards/{card_id}/pay` | Pay with a card |
 
 Try account IDs: `1000` (Alice), `1010` (Bob), `1020` (Charlie).
+
+Try card IDs: `card-1020`, `card-1021` (Alice), `55555`, `66666`, `77777` (Bob).
 
 > **Note**: The API uses in-memory hardcoded data — no database required.
 
@@ -90,6 +91,9 @@ targetPort: 8080    // ← matches uvicorn port
 From the **repository root**:
 
 ```bash
+# (Optional) If you're still in the account API directory from Step 1:
+cd ../../../..
+
 azd auth login
 azd up
 ```
@@ -161,4 +165,4 @@ azd down --purge
 
 ---
 
-**Next → [Lab 2: Add Transaction & Payment APIs](../lab-02/README.md)**
+**Next → [Lab 2: Add Transaction & Payment APIs](lab-02.md)**

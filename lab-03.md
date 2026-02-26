@@ -133,6 +133,11 @@ Expected response:
 
 ## Step 5 – List Revisions
 
+> **Tip:** If you get an error about the `Microsoft.App` provider not being registered, run:
+> ```bash
+> az provider register -n Microsoft.App --wait
+> ```
+
 ```bash
 # Get the container app name
 ACCOUNT_APP=$(az containerapp list \
@@ -229,4 +234,4 @@ az containerapp ingress traffic set \
 
 ## What's Next
 
-In **[Lab 4](../lab-04/README.md)**, you'll enable **Azure Monitor OpenTelemetry** for structured logging, deploy an **Application Insights Dashboard**, and learn to query your services with **KQL**.
+In **[Lab 4](lab-04.md)**, you'll enable **Azure Monitor OpenTelemetry** for structured logging, deploy an **Application Insights Dashboard**, and learn to query your services with **KQL**.

@@ -20,12 +20,12 @@ This copies the lab's new and modified files into the root. You always run `azd 
 
 | Lab | Topic | What You'll Build |
 |-----|-------|-------------------|
-| [Lab 1](labs/lab-01/README.md) | Deploy Your First Container App | Account API with ACR, ACA Environment, monitoring |
-| [Lab 2](labs/lab-02/README.md) | Add Microservices & Frontend | Transaction API, Payment API, React web frontend |
-| [Lab 3](labs/lab-03/README.md) | Revisions & Traffic Splitting | Multiple revision mode, canary deployments, rollback |
-| [Lab 4](labs/lab-04/README.md) | Logging & Monitoring | Azure Monitor OpenTelemetry, App Insights dashboard, KQL queries |
-| [Lab 5](labs/lab-05/README.md) | Security | Azure Key Vault, managed identity secret access, Easy Auth |
-| [Lab 6](labs/lab-06/README.md) | CI/CD with GitHub Actions | OIDC federation, azd deploy, per-service pipelines, Bicep validation |
+| [Lab 1](lab-01.md) | Deploy Your First Container App | Account API with ACR, ACA Environment, monitoring |
+| [Lab 2](lab-02.md) | Add Microservices & Frontend | Transaction API, Payment API, React web frontend |
+| [Lab 3](lab-03.md) | Revisions & Traffic Splitting | Multiple revision mode, canary deployments, rollback |
+| [Lab 4](lab-04.md) | Logging & Monitoring | Azure Monitor OpenTelemetry, App Insights dashboard, KQL queries |
+| [Lab 5](lab-05.md) | Security | Azure Key Vault, managed identity secret access, Easy Auth |
+| [Lab 6](lab-06.md) | CI/CD with GitHub Actions | OIDC federation, azd deploy, per-service pipelines, Bicep validation |
 
 ### Part 2 — AI Components
 
@@ -47,7 +47,7 @@ This copies the lab's new and modified files into the root. You always run `azd 
 | Docker | https://docs.docker.com/get-docker/ |
 | Node.js ≥ 18 (Lab 2+) | https://nodejs.org/ |
 
-## Quick Start
+## How to Start
 
 ```bash
 # 1. Clone the repo and switch to the workshop branch
@@ -55,16 +55,8 @@ git clone <repo-url>
 cd agent-openai-python-banking-assistant
 git checkout lab/workshop
 
-# 2. Start with Lab 1 (root is already Lab 1)
-cat labs/lab-01/README.md
-
-# 3. Deploy
-azd auth login
-azd up
-
-# 4. When ready for the next lab
-./setup-lab.sh 2
-azd up
+# 2. Follow the instructions in lab-01.md
+cat lab-01.md
 ```
 
 ## Project Layout
@@ -81,8 +73,13 @@ azd up
 ├── app/
 │   └── business-api/python/    # API source code
 │       └── account/            # Account API (Lab 1)
+├── lab-01.md                   # Lab 1 instructions
+├── lab-02.md                   # Lab 2 instructions
+├── lab-03.md                   # Lab 3 instructions
+├── lab-04.md                   # Lab 4 instructions
+├── lab-05.md                   # Lab 5 instructions
+├── lab-06.md                   # Lab 6 instructions
 └── labs/
-    ├── lab-01/                 # Lab 1 instructions (root IS Lab 1)
     ├── lab-02/                 # Lab 2 delta: +transaction, +payment, +frontend
     ├── lab-03/                 # Lab 3 delta: revisions & traffic splitting
     ├── lab-04/                 # Lab 4 delta: logging & monitoring

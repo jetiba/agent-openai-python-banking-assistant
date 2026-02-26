@@ -185,7 +185,7 @@ If you have the frontend deployed, open it in a browser and click around to gene
 
 Azure Container Apps automatically sends platform logs (stdout/stderr) to Log Analytics. View them in the Azure Portal:
 
-1. Go to **Azure Portal** → your **Resource Group** → your **Container Apps Environment**
+1. Go to **Azure Portal** → your **Resource Group** → your **Log Analytics workspace**
 2. Click **Logs** in the left nav
 3. Run this KQL query:
 
@@ -211,7 +211,7 @@ Click **Live Metrics** in the left nav. You'll see real-time incoming requests, 
 Click **Application Map**. This auto-discovers your services and their dependencies, showing request rates and failure percentages between components.
 
 ### Transaction Search
-Click **Transaction search**. Filter by time range and search for specific requests. Click on a request to see the **end-to-end transaction detail** — including correlated logs, dependencies, and timing.
+Under  **Transaction search**. Filter by time range and search for specific requests. Click on a request to see the **end-to-end transaction detail** — including correlated logs, dependencies, and timing.
 
 ### Failures
 Click **Failures** to see any failed requests grouped by operation, response code, and exception type.
@@ -262,7 +262,7 @@ dependencies
 
 ## Step 8 – Explore the Dashboard
 
-1. Go to **Azure Portal** → search for **Dashboard** or go to **Home** → **Dashboard**
+1. Go to **Home** → **Dashboard** -> **Browse all Dashboards** → **Shared Dashboard**
 2. Find the dashboard named with your environment prefix (e.g., `dash-<token>`)
 3. The dashboard shows at-a-glance widgets:
    - **Server Requests** — total count and trend
@@ -310,4 +310,4 @@ traces
 
 ## What's Next
 
-In **[Lab 5](../lab-05/README.md)**, you'll add **built-in authentication** (Easy Auth) to your container apps and integrate **Azure Key Vault** to manage application secrets securely.
+In **[Lab 5](lab-05.md)**, you'll add **built-in authentication** (Easy Auth) to your container apps and integrate **Azure Key Vault** to manage application secrets securely.
