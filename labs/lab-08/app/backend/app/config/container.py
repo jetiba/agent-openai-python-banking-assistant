@@ -16,16 +16,9 @@ from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoic
 class Container(containers.DeclarativeContainer):
     """IoC container for application dependencies."""
 
-    # Foundry v2 Agent Client — Singleton so the same client (and its
-    # server-side agent/thread resources) is reused across requests.
-    _azure_ai_client = providers.Singleton(
-        AzureAIClient,
-        credential=providers.Factory(get_async_azure_credential),
-        project_endpoint=settings.AZURE_AI_PROJECT_ENDPOINT,
-        model_deployment_name=settings.AZURE_AI_MODEL_DEPLOYMENT_NAME,
-    )
-
-    _azure_ai_client_payment = providers.Singleton(
+    # Foundry v2 Agent Client — Factory so a new client (and its
+    # server-side agent/thread resources) is created for each request.
+    _azure_ai_client = providers.Factory(
         AzureAIClient,
         credential=providers.Factory(get_async_azure_credential),
         project_endpoint=settings.AZURE_AI_PROJECT_ENDPOINT,
@@ -67,6 +60,6 @@ class Container(containers.DeclarativeContainer):
     # Payment Agent — NEW in Lab 8, uses Document Intelligence scan_invoice tool.
     payment_agent = providers.Singleton(
         PaymentAgent,
-        azure_ai_client=_azure_ai_client_payment,
+        azure_ai_client=_azure_ai_client,
         document_scanner_helper=document_intelligence_scanner,
     )
