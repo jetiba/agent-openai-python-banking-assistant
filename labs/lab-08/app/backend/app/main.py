@@ -12,20 +12,29 @@ from app.config.container import Container
 
 
 def create_app() -> FastAPI:
+    # Initialize logging for the app
     setup_logging()
+    # Get logger for this module
     logger = get_logger(__name__)
 
-    configure_azure_monitor(
-        connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING,
-        resource=create_resource(),
-        enable_live_metrics=True,
-    )
+    # Setup agent framework observability
+    if settings.APPLICATIONINSIGHTS_CONNECTION_STRING:
+        configure_azure_monitor(
+            connection_string=settings.APPLICATIONINSIGHTS_CONNECTION_STRING,
+            resource=create_resource(),
+            enable_live_metrics=True,
+        )
+    else:
+        logger.info("APPLICATIONINSIGHTS_CONNECTION_STRING not set — Azure Monitor disabled.")
 
     logger.info(f"Creating FastAPI application: {settings.APP_NAME}")
     app = FastAPI(title=settings.APP_NAME)
 
+    # Initialize dependency injection container
     container = Container()
-    container.wire(modules=[chat_routers, attachment_routers])
+    # Only attachment_routers uses DI injection (Depends/Provide for blob_proxy);
+    # chat_routers uses the direct singleton pattern.
+    container.wire(modules=[attachment_routers])
     app.state.container = container
 
     from contextlib import asynccontextmanager
@@ -33,7 +42,7 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
-        logger.info("Shutting down...")
+        logger.info("Shutting down application...")
         container.unwire()
 
     app.router.lifespan_context = lifespan

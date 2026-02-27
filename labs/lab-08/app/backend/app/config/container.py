@@ -25,6 +25,13 @@ class Container(containers.DeclarativeContainer):
         model_deployment_name=settings.AZURE_AI_MODEL_DEPLOYMENT_NAME,
     )
 
+    _azure_ai_client_payment = providers.Singleton(
+        AzureAIClient,
+        credential=providers.Factory(get_async_azure_credential),
+        project_endpoint=settings.AZURE_AI_PROJECT_ENDPOINT,
+        model_deployment_name=settings.AZURE_AI_MODEL_DEPLOYMENT_NAME,
+    )
+
     # ---- NEW in Lab 8: Blob Storage + Document Intelligence ----
 
     blob_service_client = providers.Singleton(
@@ -60,6 +67,6 @@ class Container(containers.DeclarativeContainer):
     # Payment Agent — NEW in Lab 8, uses Document Intelligence scan_invoice tool.
     payment_agent = providers.Singleton(
         PaymentAgent,
-        azure_ai_client=_azure_ai_client,
+        azure_ai_client=_azure_ai_client_payment,
         document_scanner_helper=document_intelligence_scanner,
     )

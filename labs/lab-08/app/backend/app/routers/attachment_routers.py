@@ -9,8 +9,8 @@ Implements the two-phase ChatKit attachment protocol:
 import logging
 from io import BytesIO
 
-from dependency_injector.wiring import Depends, Provide
-from fastapi import APIRouter, File, UploadFile
+from dependency_injector.wiring import Provide, inject
+from fastapi import APIRouter, File, UploadFile, Depends
 from fastapi.responses import StreamingResponse
 from starlette.responses import JSONResponse
 
@@ -22,20 +22,21 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_USER_ID = "demo_user"
 
-# Lazy reference to the shared MemoryStore kept by the ChatKit server.
+# Lazy reference to the shared MemoryStore kept by the ChatKit server singleton.
 _memory_store = None
 
 
 def _get_memory_store():
     global _memory_store
     if _memory_store is None:
-        from app.routers.chatkit_server import BankingAssistantChatKitServer
+        from app.routers.chat_routers import _get_chatkit_server
 
-        _memory_store = BankingAssistantChatKitServer.metadata_store
+        _memory_store = _get_chatkit_server().store
     return _memory_store
 
 
 @router.post("/upload/{attachment_id}")
+@inject
 async def upload_file(
     attachment_id: str,
     file: UploadFile = File(...),
@@ -68,6 +69,7 @@ async def upload_file(
 
 
 @router.get("/preview/{attachment_id}")
+@inject
 async def preview_image(
     attachment_id: str,
     blob_proxy: BlobStorageProxy = Depends(Provide[Container.blob_proxy]),
