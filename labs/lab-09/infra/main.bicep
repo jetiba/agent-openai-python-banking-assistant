@@ -315,15 +315,15 @@ module backend 'app/backend.bicep' = {
       // ---- NEW in Lab 9: MCP server URLs for the business APIs ----
       {
         name: 'ACCOUNT_API_MCP_URL'
-        value: '${account.outputs.SERVICE_API_URI}/mcp'
+        value: '${account.outputs.SERVICE_API_URI}/mcp/'
       }
       {
         name: 'TRANSACTION_API_MCP_URL'
-        value: '${transaction.outputs.SERVICE_API_URI}/mcp'
+        value: '${transaction.outputs.SERVICE_API_URI}/mcp/'
       }
       {
         name: 'PAYMENT_API_MCP_URL'
-        value: '${payment.outputs.SERVICE_API_URI}/mcp'
+        value: '${payment.outputs.SERVICE_API_URI}/mcp/'
       }
     ]
   }

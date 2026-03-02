@@ -16,7 +16,7 @@ def create_app() -> FastAPI:
     
   
    #Add mcp server to the FastAPI app
-    mcp_app = mcp.http_app(path='/mcp')
+    mcp_app = mcp.http_app(path='/')
     app = FastAPI(title="Account API and MCP server", lifespan=mcp_app.lifespan)
     app.mount("/mcp", mcp_app)
 

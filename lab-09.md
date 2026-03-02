@@ -117,6 +117,6 @@ All other files from Lab 8 carry forward unchanged — triage logic, attachment 
    ```
 
 6. **Test:** Open the web frontend and navigate to the **AI Agent** tab.
-   - Ask *"Show me the accounts for user john_doe"* — AccountAgent calls `getAccountsByUserName` via MCP and returns real data.
-   - Ask *"What are my recent transactions for account ACC-001?"* — AccountAgent calls `getLastTransactions` via MCP.
+   - Ask *"Show me the accounts for user bob user"* — AccountAgent calls `getAccountsByUserName` via MCP and returns real data.
+   - Ask *"What are my recent transactions for account 1010?"* — AccountAgent calls `getLastTransactions` via MCP.
    - Upload an invoice and ask *"Pay this invoice"* — PaymentAgent scans the document, presents the extracted data, and on confirmation calls `processPayment` via MCP.
