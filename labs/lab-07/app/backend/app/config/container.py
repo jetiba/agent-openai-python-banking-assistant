@@ -12,7 +12,7 @@ class Container(containers.DeclarativeContainer):
 
     # Foundry v2 Agent Client — Singleton so the same client (and its
     # server-side agent/thread resources) is reused across requests.
-    _azure_ai_client = providers.Singleton(
+    _azure_ai_client = providers.Factory(
         AzureAIClient,
         credential=providers.Factory(get_async_azure_credential),
         project_endpoint=settings.AZURE_AI_PROJECT_ENDPOINT,
