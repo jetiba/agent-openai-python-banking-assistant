@@ -4,9 +4,12 @@ Compared to Lab 8, this container now passes MCP server URLs to both agents
 so they can connect to the business API MCP servers at runtime:
 - AccountAgent  → Account API + Transaction API
 - PaymentAgent  → Payment API  (+ scan_invoice as before)
+
+Uses AzureAIProjectAgentProvider for agent creation and Foundry conversation-
+based session management.
 """
 
-from agent_framework.azure import AzureAIClient
+from agent_framework.azure import AzureAIProjectAgentProvider
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.storage.blob import BlobServiceClient
 from dependency_injector import containers, providers
@@ -22,13 +25,13 @@ from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoic
 class Container(containers.DeclarativeContainer):
     """IoC container for application dependencies."""
 
-    # Foundry v2 Agent Client — Factory so a new client (and its
+    # AzureAIProjectAgentProvider — Factory so a new provider (and its
     # server-side agent/thread resources) is created for each request.
-    _azure_ai_client = providers.Factory(
-        AzureAIClient,
+    _provider = providers.Factory(
+        AzureAIProjectAgentProvider,
         credential=providers.Factory(get_async_azure_credential),
         project_endpoint=settings.AZURE_AI_PROJECT_ENDPOINT,
-        model_deployment_name=settings.AZURE_AI_MODEL_DEPLOYMENT_NAME,
+        model=settings.AZURE_AI_MODEL_DEPLOYMENT_NAME,
     )
 
     # ---- Lab 8: Blob Storage + Document Intelligence ----
@@ -60,7 +63,7 @@ class Container(containers.DeclarativeContainer):
     # Account Agent — NEW in Lab 9: MCP connections to Account + Transaction APIs.
     account_agent = providers.Singleton(
         AccountAgent,
-        azure_ai_client=_azure_ai_client,
+        provider=_provider,
         account_api_mcp_url=settings.ACCOUNT_API_MCP_URL,
         transaction_api_mcp_url=settings.TRANSACTION_API_MCP_URL,
     )
@@ -68,7 +71,7 @@ class Container(containers.DeclarativeContainer):
     # Payment Agent — NEW in Lab 9: adds Payment API MCP alongside scan_invoice.
     payment_agent = providers.Singleton(
         PaymentAgent,
-        azure_ai_client=_azure_ai_client,
+        provider=_provider,
         document_scanner_helper=document_intelligence_scanner,
         payment_api_mcp_url=settings.PAYMENT_API_MCP_URL,
     )

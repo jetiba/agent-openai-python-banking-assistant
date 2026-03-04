@@ -7,7 +7,8 @@ Compared to Lab 7 this server:
   keyword + attachment heuristic.
 
 Uses MAF's built-in ``stream_agent_response`` helper for ChatKit event
-conversion — same pattern as Lab 7.
+conversion — same pattern as Lab 7.  Sessions are bound to Foundry
+conversations via AzureAIProjectAgentProvider.
 """
 
 import logging
@@ -39,7 +40,8 @@ class BankingAssistantChatKitServer(ChatKitServer):
     * Otherwise → AccountAgent
 
     Uses MAF's ``stream_agent_response`` for SSE event conversion.
-    A fresh Agent instance is built per request to avoid stale state.
+    Sessions are bound to Foundry conversations so history is managed
+    server-side via AzureAIProjectAgentProvider.
     """
 
     def __init__(
@@ -58,7 +60,10 @@ class BankingAssistantChatKitServer(ChatKitServer):
         super().__init__(store, attachment_store)
         self.account_agent = account_agent
         self.payment_agent = payment_agent
-        self.sessions: dict[str, AgentSession] = {}
+        # Map ChatKit thread id → Foundry conversation id
+        self._thread_conversations: dict[str, str] = {}
+        # Map conversation id → AgentSession
+        self._sessions: dict[str, AgentSession] = {}
 
     # ------------------------------------------------------------------ #
     #  Triage                                                              #
@@ -106,25 +111,48 @@ class BankingAssistantChatKitServer(ChatKitServer):
             attachment_ids = [a.id for a in input.attachments]
         has_attachments = len(attachment_ids) > 0
 
-        # 2. Triage: choose the right agent
-        if self._should_use_payment_agent(user_text, has_attachments):
-            agent = await self.payment_agent.build_af_agent()
+        # 2. Triage: choose the right agent wrapper
+        use_payment = self._should_use_payment_agent(user_text, has_attachments)
+        if use_payment:
+            agent_wrapper = self.payment_agent
             # Append attachment reference so the agent can call scan_invoice
             if attachment_ids:
                 user_text += f" [attachment_id: {attachment_ids[0]}]"
             logger.info("Thread %s → PaymentAgent — user: %s", thread.id, user_text[:80])
         else:
-            agent = await self.account_agent.build_af_agent()
+            agent_wrapper = self.account_agent
             logger.info("Thread %s → AccountAgent — user: %s", thread.id, user_text[:80])
 
-        # 3. Get or create a session for this ChatKit thread
-        if thread.id not in self.sessions:
-            self.sessions[thread.id] = agent.create_session()
-        session = self.sessions[thread.id]
+        # 3. Build agent (cached after first call)
+        agent = await agent_wrapper.build_af_agent()
+        logger.info("Thread %s — agent built successfully", thread.id)
 
-        # 4. Stream agent response using MAF's built-in helper
+        # 4. Get or create a Foundry conversation + session for this ChatKit thread
+        if thread.id not in self._thread_conversations:
+            conversation_id, session = await agent_wrapper.create_conversation_session()
+            self._thread_conversations[thread.id] = conversation_id
+            self._sessions[conversation_id] = session
+            logger.info(
+                "Thread %s — created Foundry conversation %s",
+                thread.id, conversation_id,
+            )
+        else:
+            conversation_id = self._thread_conversations[thread.id]
+            if conversation_id not in self._sessions:
+                session = await agent_wrapper.get_session_for_conversation(conversation_id)
+                self._sessions[conversation_id] = session
+            else:
+                session = self._sessions[conversation_id]
+            logger.info(
+                "Thread %s — reusing Foundry conversation %s",
+                thread.id, conversation_id,
+            )
+
+        # 5. Stream agent response using MAF's built-in helper
         try:
-            response_stream = agent.run(user_text, stream=True, session=session)
+            response_stream = agent.run(
+                user_text, stream=True, session=session, options={"store": True},
+            )
             async for event in stream_agent_response(response_stream, thread.id):
                 yield event
             logger.info("Thread %s — stream finished", thread.id)
@@ -132,7 +160,7 @@ class BankingAssistantChatKitServer(ChatKitServer):
             logger.exception("Thread %s — error during agent.run streaming", thread.id)
             raise
 
-        # 5. Set thread title from the first user message
+        # 6. Set thread title from the first user message
         if not thread.title or thread.title == "New thread":
             if user_text.strip():
                 thread.title = user_text[:50].strip()

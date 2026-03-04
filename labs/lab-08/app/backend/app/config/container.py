@@ -1,6 +1,6 @@
-"""Dependency injection container for Lab 8 — AccountAgent + PaymentAgent."""
+"""Dependency injection container for Lab 8 — AccountAgent + PaymentAgent with Provider."""
 
-from agent_framework.azure import AzureAIClient
+from agent_framework.azure import AzureAIProjectAgentProvider
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.storage.blob import BlobServiceClient
 from dependency_injector import containers, providers
@@ -16,13 +16,13 @@ from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoic
 class Container(containers.DeclarativeContainer):
     """IoC container for application dependencies."""
 
-    # Foundry v2 Agent Client — Factory so a new client (and its
+    # AzureAIProjectAgentProvider — Factory so a new provider (and its
     # server-side agent/thread resources) is created for each request.
-    _azure_ai_client = providers.Factory(
-        AzureAIClient,
+    _provider = providers.Factory(
+        AzureAIProjectAgentProvider,
         credential=providers.Factory(get_async_azure_credential),
         project_endpoint=settings.AZURE_AI_PROJECT_ENDPOINT,
-        model_deployment_name=settings.AZURE_AI_MODEL_DEPLOYMENT_NAME,
+        model=settings.AZURE_AI_MODEL_DEPLOYMENT_NAME,
     )
 
     # ---- NEW in Lab 8: Blob Storage + Document Intelligence ----
@@ -54,12 +54,12 @@ class Container(containers.DeclarativeContainer):
     # Account Agent — conversational only, same as Lab 7 (no tools).
     account_agent = providers.Singleton(
         AccountAgent,
-        azure_ai_client=_azure_ai_client,
+        provider=_provider,
     )
 
     # Payment Agent — NEW in Lab 8, uses Document Intelligence scan_invoice tool.
     payment_agent = providers.Singleton(
         PaymentAgent,
-        azure_ai_client=_azure_ai_client,
+        provider=_provider,
         document_scanner_helper=document_intelligence_scanner,
     )

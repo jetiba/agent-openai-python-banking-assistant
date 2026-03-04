@@ -4,13 +4,16 @@ Compared to Lab 7 (conversational only), this agent now connects to the
 Account API and Transaction API via MCP Streamable HTTP to fetch real
 customer data, account details, beneficiaries, credit cards, and
 transaction history.
+
+Uses AzureAIProjectAgentProvider for agent creation and Foundry conversation-
+based session management.
 """
 
 import logging
 from datetime import datetime
 
-from agent_framework import Agent, MCPStreamableHTTPTool
-from agent_framework.azure import AzureAIClient
+from agent_framework import Agent, AgentSession, MCPStreamableHTTPTool
+from agent_framework.azure import AzureAIProjectAgentProvider
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +54,20 @@ class AccountAgent:
 
     def __init__(
         self,
-        azure_ai_client: AzureAIClient,
+        provider: AzureAIProjectAgentProvider,
         account_api_mcp_url: str,
         transaction_api_mcp_url: str,
     ):
-        self.azure_ai_client = azure_ai_client
+        self.provider = provider
         self.account_api_mcp_url = account_api_mcp_url
         self.transaction_api_mcp_url = transaction_api_mcp_url
+        self._agent: Agent | None = None
 
     async def build_af_agent(self) -> Agent:
         """Build and return an Agent Framework agent with MCP tools."""
+        if self._agent is not None:
+            return self._agent
+
         logger.info("Initializing Account Agent with MCP tools")
 
         account_mcp = MCPStreamableHTTPTool(
@@ -80,10 +87,27 @@ class AccountAgent:
             current_date_time=current_date_time,
         )
 
-        agent = Agent(
-            client=self.azure_ai_client,
-            instructions=full_instructions,
+        self._agent = await self.provider.create_agent(
             name=AccountAgent.name,
+            instructions=full_instructions,
+            description=AccountAgent.description,
             tools=[account_mcp, transaction_mcp],
         )
-        return agent
+        return self._agent
+
+    async def create_conversation_session(self) -> tuple[str, AgentSession]:
+        """Create a Foundry conversation and return (conversation_id, session)."""
+        agent = await self.build_af_agent()
+
+        openai_client = agent.client.project_client.get_openai_client()
+        conversation = await openai_client.conversations.create()
+        conversation_id = conversation.id
+        logger.info("Created Foundry conversation for AccountAgent: %s", conversation_id)
+
+        session = agent.get_session(service_session_id=conversation_id)
+        return conversation_id, session
+
+    async def get_session_for_conversation(self, conversation_id: str) -> AgentSession:
+        """Return a session bound to an existing Foundry conversation."""
+        agent = await self.build_af_agent()
+        return agent.get_session(service_session_id=conversation_id)

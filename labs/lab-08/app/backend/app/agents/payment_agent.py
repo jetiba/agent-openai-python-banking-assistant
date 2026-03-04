@@ -3,13 +3,16 @@
 Introduced in Lab 8 alongside the existing AccountAgent.  While AccountAgent
 handles general banking Q&A, this agent specialises in invoice / bill
 scanning via the ``scan_invoice`` tool powered by Azure Document Intelligence.
+
+Uses AzureAIProjectAgentProvider for agent creation and Foundry conversation-
+based session management.
 """
 
 import logging
 from datetime import datetime
 
-from agent_framework import Agent
-from agent_framework.azure import AzureAIClient
+from agent_framework import Agent, AgentSession
+from agent_framework.azure import AzureAIProjectAgentProvider
 
 from app.helpers.document_intelligence_scanner import DocumentIntelligenceInvoiceScanHelper
 
@@ -57,14 +60,18 @@ class PaymentAgent:
 
     def __init__(
         self,
-        azure_ai_client: AzureAIClient,
+        provider: AzureAIProjectAgentProvider,
         document_scanner_helper: DocumentIntelligenceInvoiceScanHelper,
     ):
-        self.azure_ai_client = azure_ai_client
+        self.provider = provider
         self.document_scanner_helper = document_scanner_helper
+        self._agent: Agent | None = None
 
     async def build_af_agent(self) -> Agent:
         """Build and return an Agent Framework agent with the scan_invoice tool."""
+        if self._agent is not None:
+            return self._agent
+
         logger.info("Initializing Payment Agent with Document Intelligence tool")
 
         current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -72,10 +79,27 @@ class PaymentAgent:
             current_date_time=current_date_time,
         )
 
-        agent = Agent(
-            client=self.azure_ai_client,
-            instructions=full_instructions,
+        self._agent = await self.provider.create_agent(
             name=PaymentAgent.name,
+            instructions=full_instructions,
+            description=PaymentAgent.description,
             tools=[self.document_scanner_helper.scan_invoice],
         )
-        return agent
+        return self._agent
+
+    async def create_conversation_session(self) -> tuple[str, AgentSession]:
+        """Create a Foundry conversation and return (conversation_id, session)."""
+        agent = await self.build_af_agent()
+
+        openai_client = agent.client.project_client.get_openai_client()
+        conversation = await openai_client.conversations.create()
+        conversation_id = conversation.id
+        logger.info("Created Foundry conversation for PaymentAgent: %s", conversation_id)
+
+        session = agent.get_session(service_session_id=conversation_id)
+        return conversation_id, session
+
+    async def get_session_for_conversation(self, conversation_id: str) -> AgentSession:
+        """Return a session bound to an existing Foundry conversation."""
+        agent = await self.build_af_agent()
+        return agent.get_session(service_session_id=conversation_id)
