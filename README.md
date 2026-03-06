@@ -31,12 +31,10 @@ This copies the lab's new and modified files into the root. You always run `azd 
 
 | Lab | Topic | What You'll Build |
 |-----|-------|-------------------|
-| Lab 7 | *Coming soon* | AI Foundry + model deployment |
-| Lab 8 | *Coming soon* | AI backend agent |
-| Lab 9 | *Coming soon* | Multi-agent orchestration |
-| Lab 10 | *Coming soon* | MCP tool integration |
-| Lab 11 | *Coming soon* | Full banking assistant |
-
+| [Lab 7](lab-07.md) | Single simple Agent deployment | Azure AI Foundry resource, GPT-4.1 deployment, simple prompt agent with ChatKit integration 
+| [Lab 8](lab-08.md) | Tools integration | A simple agent with Document Intelligence tool, file upload and scan handling 
+| [Lab 9](lab-09.md) | MCP tool integration | Agent tools that call the business API via MCP servers, end-to-end flows with real data
+| [Lab 10](lab-10.md)| Multi-agent orchestration | Message triage and handoff for a multi-agent experience
 ## Prerequisites
 
 | Tool | Install |

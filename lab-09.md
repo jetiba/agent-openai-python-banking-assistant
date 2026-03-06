@@ -116,7 +116,15 @@ All other files from Lab 8 carry forward unchanged — triage logic, attachment 
    azd up
    ```
 
-6. **Test:** Open the web frontend and navigate to the **AI Agent** tab.
-   - Ask *"Show me the accounts for user bob user"* — AccountAgent calls `getAccountsByUserName` via MCP and returns real data.
+6. **Test:** 
+   - Open the web frontend and locate the agent chat at the bottom right of the page.
+   - Ask *"Show my accounts"* — AccountAgent calls `getAccountsByUserName` via MCP and returns real data.
    - Ask *"What are my recent transactions for account 1010?"* — AccountAgent calls `getLastTransactions` via MCP.
    - Upload an invoice and ask *"Pay this invoice"* — PaymentAgent scans the document, presents the extracted data, and on confirmation calls `processPayment` via MCP.
+   - Connect to the Foundry portal: from the [Azure Portal](https://portal.azure.com) > select your Foundry project resource > in the 'Overview' page click on 'Go to Foundry portal' > Build > Agents > select one of the agents created and check:
+      - The agent's version (it should be updated) and configuration in the 'Playground'
+      - The agent's execution traces, in the tab 'Traces'. Each message has a conversation ID, if you click on that you can see the entire history for the conversation.
+      - Note the tool invocations in the conversation details, which show calls to the MCP server.
+      - Traces are not enabled because App Insights is not configured, but you can enable them in the Foundry portal and then check the telemetry in Azure Monitor.
+
+**Next → [Lab 9: Business APIs Integration as MCP Servers](lab-10.md)**
