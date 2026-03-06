@@ -209,6 +209,10 @@ class HandoffOrchestrator:
     # persistent backend (database, Redis, etc.).
     thread_checkpoint_store: dict[str, CheckpointStorage] = {}
 
+    # Per-thread workflow instances — each thread gets its own workflow
+    # to avoid "Workflow is already running" errors on concurrent use.
+    _thread_workflows: dict[str, Any] = {}
+
     def __init__(
         self,
         azure_ai_client: AzureAIClient,
@@ -220,16 +224,22 @@ class HandoffOrchestrator:
         self.account_agent = account_agent
         self.transaction_agent = transaction_agent
         self.payment_agent = payment_agent
-        self.workflow = None  # built lazily in ``initialize()``
+        self._agents_built = False
+        self._triage_agent: Agent | None = None
+        self._built_account_agent: Any = None
+        self._built_transaction_agent: Any = None
+        self._built_payment_agent: Any = None
 
     # ── Lazy async init ──────────────────────────────────────────────
 
-    async def initialize(self, checkpoint_storage: CheckpointStorage) -> None:
-        """Build all agents and assemble the handoff workflow."""
-        logger.info("Initialising HandoffOrchestrator workflow …")
+    async def _build_agents(self) -> None:
+        """Build all agent instances once (MCP tool setup is async)."""
+        if self._agents_built:
+            return
+        logger.info("Building HandoffOrchestrator agents …")
 
         # Triage agent — no domain tools, just 3 handoff functions.
-        triage_agent = Agent(
+        self._triage_agent = Agent(
             client=self.azure_ai_client,
             instructions=HandoffOrchestrator.triage_instructions,
             name="TriageAgent",
@@ -239,36 +249,40 @@ class HandoffOrchestrator:
                 handoff_to_payment_agent,
             ],
         )
-        triage_agent.default_options["tools"] = [
+        self._triage_agent.default_options["tools"] = [
             handoff_to_account_agent,
             handoff_to_transaction_history_agent,
             handoff_to_payment_agent,
         ]
 
         # Specialist agents — each exposes its own tools + handoff_to_triage
-        account_agent = await self.account_agent.build_af_agent()
-        transaction_agent = await self.transaction_agent.build_af_agent()
-        payment_agent = await self.payment_agent.build_af_agent()
+        self._built_account_agent = await self.account_agent.build_af_agent()
+        self._built_transaction_agent = await self.transaction_agent.build_af_agent()
+        self._built_payment_agent = await self.payment_agent.build_af_agent()
 
-        # Assemble the handoff workflow
-        self.workflow = (
+        self._agents_built = True
+        logger.info("HandoffOrchestrator agents built")
+
+    def _build_workflow(self, checkpoint_storage: CheckpointStorage) -> Any:
+        """Create a new workflow instance from the pre-built agents."""
+        return (
             CustomHandoffBuilder(
                 name="banking_assistant_handoff",
                 participants=[
-                    triage_agent,
-                    account_agent,
-                    transaction_agent,
-                    payment_agent,
+                    self._triage_agent,
+                    self._built_account_agent,
+                    self._built_transaction_agent,
+                    self._built_payment_agent,
                 ],
             )
-            .with_start_agent(triage_agent)
+            .with_start_agent(self._triage_agent)
             .add_handoff(
-                triage_agent,
-                [account_agent, transaction_agent, payment_agent],
+                self._triage_agent,
+                [self._built_account_agent, self._built_transaction_agent, self._built_payment_agent],
             )
-            .add_handoff(account_agent, [triage_agent])
-            .add_handoff(transaction_agent, [triage_agent])
-            .add_handoff(payment_agent, [triage_agent])
+            .add_handoff(self._built_account_agent, [self._triage_agent])
+            .add_handoff(self._built_transaction_agent, [self._triage_agent])
+            .add_handoff(self._built_payment_agent, [self._triage_agent])
             .with_termination_condition(
                 # Terminate after 20 user messages (don't count agent responses)
                 lambda conv: sum(1 for msg in conv if msg.role == "user") >= 20
@@ -276,7 +290,17 @@ class HandoffOrchestrator:
             .with_checkpointing(checkpoint_storage)
             .build()
         )
-        logger.info("HandoffOrchestrator workflow initialised")
+
+    async def _get_or_create_workflow(self, thread_id: str, checkpoint_storage: CheckpointStorage) -> Any:
+        """Return a per-thread workflow, creating one if needed."""
+        workflow = HandoffOrchestrator._thread_workflows.get(thread_id)
+        if workflow is not None:
+            return workflow
+        await self._build_agents()
+        workflow = self._build_workflow(checkpoint_storage)
+        HandoffOrchestrator._thread_workflows[thread_id] = workflow
+        logger.info("Created workflow for thread %s", thread_id)
+        return workflow
 
     # ── Checkpoint helpers ───────────────────────────────────────────
 
@@ -293,12 +317,13 @@ class HandoffOrchestrator:
 
     async def _resume_workflow_with_response(
         self,
+        workflow: Any,
         checkpoint_storage: CheckpointStorage,
         checkpoint_id: str,
         user_message: str,
     ) -> AsyncIterable[WorkflowEvent]:
         """Resume a workflow that is blocking on ``HandoffAgentUserRequest``."""
-        events = self.workflow.run(  # type: ignore[union-attr]
+        events = workflow.run(
             checkpoint_id=checkpoint_id,
             checkpoint_storage=checkpoint_storage,
             stream=True,
@@ -314,7 +339,7 @@ class HandoffOrchestrator:
                             user_message
                         )
                     }
-                    return self.workflow.run(  # type: ignore[union-attr]
+                    return workflow.run(
                         responses=responses,
                         checkpoint_id=checkpoint_id,
                         checkpoint_storage=checkpoint_storage,
@@ -337,23 +362,20 @@ class HandoffOrchestrator:
         """Stream workflow events for a new user message."""
 
         checkpoint_storage = await self._get_or_create_checkpoint_store(thread_id)
-
-        # Lazy init — MCP connections require async setup.
-        if self.workflow is None:
-            await self.initialize(checkpoint_storage)
+        workflow = await self._get_or_create_workflow(thread_id, checkpoint_storage)
 
         checkpoint = await checkpoint_storage.get_latest(
-            workflow_name=self.workflow.name  # type: ignore[union-attr]
+            workflow_name=workflow.name
         )
 
         if checkpoint is None:
             # First message — start a new conversation.
-            async for event in self.workflow.run(user_message, stream=True):  # type: ignore[union-attr]
+            async for event in workflow.run(user_message, stream=True):
                 yield event
         else:
             # Subsequent message — resume from checkpoint.
             async for event in await self._resume_workflow_with_response(
-                checkpoint_storage, checkpoint.checkpoint_id, user_message
+                workflow, checkpoint_storage, checkpoint.checkpoint_id, user_message
             ):
                 yield event
 
@@ -368,12 +390,10 @@ class HandoffOrchestrator:
         """Resume the workflow with a human approval / rejection decision."""
 
         checkpoint_storage = await self._get_or_create_checkpoint_store(thread_id)
-
-        if self.workflow is None:
-            await self.initialize(checkpoint_storage)
+        workflow = await self._get_or_create_workflow(thread_id, checkpoint_storage)
 
         checkpoint = await checkpoint_storage.get_latest(
-            workflow_name=self.workflow.name  # type: ignore[union-attr]
+            workflow_name=workflow.name
         )
         if checkpoint is None:
             raise AgentFrameworkException(
@@ -383,7 +403,7 @@ class HandoffOrchestrator:
 
         # Restart the workflow from the checkpoint to recover the
         # ``function_approval_request`` event reference.
-        events = self.workflow.run(  # type: ignore[union-attr]
+        events = workflow.run(
             checkpoint_id=checkpoint.checkpoint_id,
             checkpoint_storage=checkpoint_storage,
             stream=True,
@@ -401,7 +421,7 @@ class HandoffOrchestrator:
                     responses[event.request_id] = (
                         event.data.to_function_approval_response(approved=approved)
                     )
-                    async for resumed_event in self.workflow.run(  # type: ignore[union-attr]
+                    async for resumed_event in workflow.run(
                         responses=responses,
                         checkpoint_id=checkpoint.checkpoint_id,
                         checkpoint_storage=checkpoint_storage,
