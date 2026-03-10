@@ -34,6 +34,6 @@ app = create_app()
 
 if __name__ == "__main__":
     profile = os.environ.get("PROFILE", "prod")
-    port = 8071 if profile == "dev" else 8080
+    port = 8072 if profile == "dev" else 8080
     logger.info("Starting payment service server with profile: %s, port: %s", profile, port)
     uvicorn.run("main:app", host="0.0.0.0", port=port)

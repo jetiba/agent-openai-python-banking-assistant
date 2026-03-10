@@ -119,4 +119,5 @@ This deploys all four services. The Payment container automatically receives the
 
 ---
 
-**Next** → [Lab 3: Revisions & Traffic Splitting](lab-03.md)
+## Next Steps 
+Continue with [Lab 3: Revisions & Traffic Splitting](lab-03.md) to implement revisions and traffic splitting for your APIs.

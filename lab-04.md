@@ -308,6 +308,6 @@ traces
 - **KQL** gives you full query power over your logs and metrics
 - **Dashboards** provide a sharable, at-a-glance view of your application's health
 
-## What's Next
+## Next Steps 
 
 In **[Lab 5](lab-05.md)**, you'll add **built-in authentication** (Easy Auth) to your container apps and integrate **Azure Key Vault** to manage application secrets securely.

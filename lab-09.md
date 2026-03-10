@@ -127,4 +127,5 @@ All other files from Lab 8 carry forward unchanged — triage logic, attachment 
       - Note the tool invocations in the conversation details, which show calls to the MCP server.
       - Traces are not enabled because App Insights is not configured, but you can enable them in the Foundry portal and then check the telemetry in Azure Monitor.
 
-**Next → [Lab 9: Business APIs Integration as MCP Servers](lab-10.md)**
+## Next Steps 
+Continue with **[Lab 10: Business APIs Integration as MCP Servers](lab-10.md)** to integrate business APIs and extend the capabilities of your agents.

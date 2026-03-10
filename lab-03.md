@@ -232,6 +232,6 @@ az containerapp ingress traffic set \
 - You can **roll back instantly** by shifting traffic to a previous revision — no redeployment needed
 - The shared `container-app-upsert.bicep` already accepts `revisionMode`, making it reusable for any service
 
-## What's Next
+## Next Steps 
 
 In **[Lab 4](lab-04.md)**, you'll enable **Azure Monitor OpenTelemetry** for structured logging, deploy an **Application Insights Dashboard**, and learn to query your services with **KQL**.

@@ -58,8 +58,8 @@ class Settings(BaseSettings):
 
     # ---- NEW in Lab 9: MCP server URLs for the business APIs ----
     ACCOUNT_API_MCP_URL: str = Field(default="http://localhost:8070/mcp/")
-    TRANSACTION_API_MCP_URL: str = Field(default="http://localhost:8072/mcp/")
-    PAYMENT_API_MCP_URL: str = Field(default="http://localhost:8071/mcp/")
+    TRANSACTION_API_MCP_URL: str = Field(default="http://localhost:8071/mcp/")
+    PAYMENT_API_MCP_URL: str = Field(default="http://localhost:8072/mcp/")
 
     model_config = SettingsConfigDict(
         env_file=get_env_files(),

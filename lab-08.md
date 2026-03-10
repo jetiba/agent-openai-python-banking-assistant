@@ -120,4 +120,5 @@
       - Note the tool invocations in the conversation details, which show calls to `scan_invoice` with the attachment ID, and the tool output with the extracted invoice fields.
       - Traces are not enabled because App Insights is not configured, but you can enable them in the Foundry portal and then check the telemetry in Azure Monitor.
 
-**Next → [Lab 9: Business APIs Integration as MCP Servers](lab-09.md)**
+## Next Steps 
+Continue with **[Lab 9: Business APIs Integration as MCP Servers](lab-09.md)** to integrate business APIs and extend the capabilities of your agents.

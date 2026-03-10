@@ -165,4 +165,5 @@ azd down --purge
 
 ---
 
-**Next → [Lab 2: Add Transaction & Payment APIs](lab-02.md)**
+## Next Steps 
+Continue with [Lab 2: Add Transaction & Payment APIs](lab-02.md) to expand the API and deploy updates with `azd deploy`!

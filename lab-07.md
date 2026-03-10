@@ -92,4 +92,5 @@
         - Traces are not enabled because App Insights is not configured, but you can enable them in the Foundry portal and then check the telemetry in Azure Monitor.
     - Note that this is a simple prompt agent and it has no tools yet, so it cannot look up real account data or interact with the transaction/payment APIs – that will come in the next labs!
 
-**Next → [Lab 8: Document Intelligence & Invoice scan tool](lab-08.md)**
+## Next Steps 
+Continue with **[Lab 8: Document Intelligence & Invoice scan tool](lab-08.md)** to add a new agent with a Document Intelligence tool, and connect it to the frontend for file upload and scanning capabilities!

@@ -356,6 +356,6 @@ azd provision
 - **Easy Auth** provides authentication at the platform level without modifying application code — it is configured entirely in Bicep and can be toggled on/off with a parameter
 - Separating infrastructure security (Key Vault, access policies) from application code (SDK helper) follows the **principle of least privilege** and **defense in depth**
 
-## What's Next
+## Next Steps 
 
 In [Lab 6](lab-06.md), you'll set up **CI/CD with GitHub Actions** — configuring OIDC federation, automating deployments with `azd`, and building per-service pipelines with change detection.

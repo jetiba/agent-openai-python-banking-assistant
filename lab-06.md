@@ -414,6 +414,5 @@ After either workflow completes successfully:
 - **Infrastructure validation CI** catches Bicep errors and security issues before they reach production
 - The `permissions.id-token: write` permission is **required** for OIDC — without it, the runner cannot request a token
 
-## What's Next
-
+## Next Steps 
 In **Lab 7**, you'll integrate **Azure AI Foundry** to add AI/ML capabilities to your banking assistant, connecting the backend services to large language models for intelligent responses.

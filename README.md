@@ -2,17 +2,26 @@
 
 A hands-on workshop that starts from a single containerized API and progressively builds a full-stack, AI-powered banking assistant on **Azure Container Apps**.
 
-## Workshop Structure
+## Prerequisites
 
-The repository root is your **working directory**. It starts in the **Lab 1** state: a single Account API deployed to Azure Container Apps.
+| Tool | Install |
+|------|---------|
+| Python ≥ 3.11 | https://www.python.org/downloads/ |
+| uv | https://github.com/astral-sh/uv |
+| Azure Developer CLI (`azd`) | https://aka.ms/azure-dev/install |
+| Docker | https://docs.docker.com/get-docker/ |
+| Node.js ≥ 18 (Lab 2+) | https://nodejs.org/ |
 
-Each subsequent lab is stored as a set of **delta files** in `labs/lab-XX/`. You apply a lab by running:
+> [!NOTE]
+> A Dev Container is available for running the workshop in a pre-configured environment. It includes all necessary tools and dependencies. To use the Dev Container, open this repository in VS Code and select "Reopen in Container" when prompted.
+> If you have a Github Enterprise account with Codespaces enabled, you can use it to run the workshop in a cloud-based development environment.
 
-```bash
-./setup-lab.sh <lab-number>
-```
+### Solution architecture
+|![image](docs/assets/HLA-Agent-Framework.png)|
+|---|
 
-This copies the lab's new and modified files into the root. You always run `azd up` (or `azd deploy`) from the root.
+The home banking assistant is designed as conversational multi-agent system with each agent specializing in a specific functional domain (e.g., account management, transaction history, payments).Business services logic is exposed to agents through MCP endpoint running on domain driven microservice.
+We will start to deploy the frontend and the backend services to Azure Container Apps, and then we will add the agent components on top of it. The agent will be built using Azure AI Foundry, which provides a managed environment for deploying and orchestrating AI agents. The agent will use GPT-4.1 as the underlying language model, and it will integrate with the business services through tools and MCP servers.
 
 ## Labs
 
@@ -35,15 +44,18 @@ This copies the lab's new and modified files into the root. You always run `azd 
 | [Lab 8](lab-08.md) | Tools integration | A simple agent with Document Intelligence tool, file upload and scan handling 
 | [Lab 9](lab-09.md) | MCP tool integration | Agent tools that call the business API via MCP servers, end-to-end flows with real data
 | [Lab 10](lab-10.md)| Multi-agent orchestration | Message triage and handoff for a multi-agent experience
-## Prerequisites
 
-| Tool | Install |
-|------|---------|
-| Python ≥ 3.11 | https://www.python.org/downloads/ |
-| uv | https://github.com/astral-sh/uv |
-| Azure Developer CLI (`azd`) | https://aka.ms/azure-dev/install |
-| Docker | https://docs.docker.com/get-docker/ |
-| Node.js ≥ 18 (Lab 2+) | https://nodejs.org/ |
+## Workshop Structure
+
+The repository root is your **working directory**. It is ready for starting the **Lab 1** state: a single Account API deployed to Azure Container Apps. 
+
+Each subsequent lab is stored as a set of **delta files** in `labs/lab-XX/`. You apply a lab by running:
+
+```bash
+./setup-lab.sh <lab-number>
+```
+
+This copies the lab's new and modified files into the root. You always run `azd up` (or `azd deploy`) from the root.
 
 ## How to Start
 
@@ -52,15 +64,13 @@ This copies the lab's new and modified files into the root. You always run `azd 
 git clone <repo-url>
 cd agent-openai-python-banking-assistant
 git checkout lab/workshop
-
-# 2. Follow the instructions in lab-01.md
-cat lab-01.md
 ```
+
+Review the content of the repository. 
 
 ## Project Layout
 
 ```
-.
 ├── azure.yaml                  # azd service definitions (evolves per lab)
 ├── setup-lab.sh                # Script to apply lab deltas
 ├── infra/
@@ -97,3 +107,6 @@ cat lab-01.md
 ```bash
 azd down --purge
 ```
+
+## Next Steps
+Start with [Lab 1](lab-01.md) to deploy your first container app!
