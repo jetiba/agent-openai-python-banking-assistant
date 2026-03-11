@@ -56,6 +56,8 @@ Lab 5 introduces a Key Vault that acts as the central secret store. Each Contain
 
 ## Files in this Lab (delta from Labs 1–4)
 
+From the previous labs, the following files will be added or modified to integrate Azure Key Vault for secret management and optionally enable Easy Auth on the web frontend:
+
 | File | Status | Purpose |
 |------|--------|---------|
 | `infra/main.bicep` | Modified | Deploys Key Vault, stores App Insights connection string as secret, grants access policies to all services, optional Easy Auth for web |
@@ -96,6 +98,8 @@ This copies all Lab 5 delta files into your workspace: updated Bicep modules, ne
 
 ### Key Vault Deployment
 
+Instead of passing sensitive values like connection strings directly as environment variables, we now store them securely in **Azure Key Vault**. The container apps will use their **managed identity** to retrieve secrets at runtime — no credentials stored in code or configuration.
+
 Open `infra/main.bicep`. The new Key Vault section deploys the vault and stores the Application Insights connection string as a secret:
 
 ```bicep
@@ -129,7 +133,7 @@ Key points:
 
 ### Access Policies
 
-Each service's managed identity is granted `get` and `list` permissions on secrets:
+For each container app to read secrets from Key Vault, we need to grant its **managed identity** the right permissions. Each service gets `get` and `list` access on secrets — following the principle of least privilege:
 
 ```bicep
 module accountKeyVaultAccess './shared/security/keyvault-access.bicep' = {
@@ -146,7 +150,7 @@ This is repeated for all four services (account, transaction, payment, web).
 
 ### Key Vault Endpoint Environment Variable
 
-Each service Bicep file (`infra/app/*.bicep`) now accepts a `keyVaultEndpoint` parameter and passes it as the `AZURE_KEY_VAULT_ENDPOINT` environment variable:
+The application code needs to know where to find the Key Vault. Rather than hardcoding the URL, each service Bicep file (`infra/app/*.bicep`) now injects the vault's endpoint as an environment variable. The Python helper uses this to connect to Key Vault using the managed identity:
 
 ```bicep
 param keyVaultEndpoint string = ''
@@ -157,7 +161,7 @@ param keyVaultEndpoint string = ''
 
 ### Easy Auth (Optional)
 
-The `container-app-auth.bicep` module is conditionally deployed when `webAuthClientId` is provided:
+**Easy Auth** (built-in authentication) allows you to protect your web frontend with Microsoft Entra ID login — without writing any authentication code in your application. It's configured entirely at the infrastructure level. The `container-app-auth.bicep` module is conditionally deployed only when an Entra ID app registration client ID is provided:
 
 ```bicep
 module webAuth './shared/security/container-app-auth.bicep' = if (!empty(webAuthClientId)) {
@@ -235,6 +239,9 @@ This will:
 1. Go to **Azure Portal** → your **Resource Group**
 2. Find the **Key Vault** resource (named `kv-<token>`)
 3. Click **Secrets** in the left nav
+
+> **⚠️ Note:** If you see an "Access denied" or "Unauthorized" message when trying to list secrets, you need to add an access policy for your user. Go to the Key Vault → **Access policies** → **Create**, select the **Get** and **List** permissions under **Secret permissions**, then click **Next** and search for your user account. Complete the wizard to save the policy. Wait a moment for it to take effect, then refresh the Secrets page.
+
 4. You should see `appinsights-connection-string` listed
 5. Click on it → click the current version → click **Show Secret Value** to confirm it matches your Application Insights connection string
 
@@ -246,7 +253,7 @@ Check the container logs to confirm Key Vault connectivity:
 ACCOUNT_URL=$(azd env get-value ACCOUNT_API_URL)
 
 # Trigger the app to verify it started and connected to Key Vault
-curl -s "$ACCOUNT_URL/api/accounts" | head -20
+curl -s "$ACCOUNT_URL/api/accounts/1010/cards" | head -20
 ```
 
 Then check the logs using the Azure Portal or the CLI:
@@ -267,7 +274,7 @@ If you see `"AZURE_KEY_VAULT_ENDPOINT not set – Key Vault integration disabled
 
 ## Step 7 – Use the Key Vault Helper in Your Code
 
-Now that Key Vault is connected, you can retrieve secrets programmatically. For example, to read the App Insights connection string from Key Vault instead of the environment variable:
+Now that Key Vault is connected, you can retrieve secrets programmatically. To try this, go to the Azure Portal → your **Container App (account)** → **Console**, select the running container, and open a **Python** shell. Then run the following commands:
 
 ```python
 from keyvault_helper import get_secret
@@ -295,12 +302,12 @@ api_key = get_secret("my-api-key", default="fallback-value")
 
 ## Step 8 – (Optional) Enable Easy Auth on the Web Frontend
 
-> **Note:** This step requires you to create an **Microsoft Entra ID App Registration** in your tenant. If you don't have permission to do this, you can skip this section.
+> **Note:** This step requires you to create a **Microsoft Entra ID App Registration** in your tenant. If you don't have permission to do this, you can skip this section. If this lab is run on a Microsoft-provided tenant (e.g., a workshop or hackathon environment), there is a high chance that this optional part won't work due to security restrictions on the tenant.
 
 ### 8a – Create an App Registration
 
 1. Go to **Azure Portal** → **Microsoft Entra ID** → **App registrations** → **New registration**
-2. Name: `banking-web-auth` (or any name you prefer)
+2. Name: `banking-web-auth-<your-username>` (use your Azure username without the domain as a suffix, e.g., `banking-web-auth-gd-GZENV-1-2`)
 3. Supported account types: **Accounts in this organizational directory only**
 4. Redirect URI: Choose **Web** and enter your web app URL + `/.auth/login/aad/callback`
    ```

@@ -65,6 +65,8 @@ Lab 6 adds a CI/CD pipeline layer on top of the existing application architectur
 
 ## Files in this Lab (delta from Labs 1–5)
 
+From the previous labs, the following files will be added to set up CI/CD pipelines with GitHub Actions:
+
 | File | Status | Purpose |
 |------|--------|---------|
 | `.github/workflows/azure-dev.yml` | New | azd-based workflow: provision + deploy via manual trigger |

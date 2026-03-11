@@ -45,6 +45,8 @@ Lab 3 keeps the same three-service architecture from Lab 2. The change is operat
 
 ## Files in this Lab (delta from Lab 2)
 
+From the previous lab, the following files will be modified to enable multiple revision mode and traffic splitting:
+
 | File | Status | Purpose |
 |------|--------|---------|
 | `infra/app/account.bicep` | Modified | Sets `revisionMode: 'Multiple'` for the Account API |
@@ -85,7 +87,7 @@ The default value `'Single'` means Labs 1 and 2 continue to work without changes
 
 ### Account Bicep: Multiple revision mode
 
-Open `infra/app/account.bicep`. The module call now includes:
+Open `infra/app/account.bicep` and look for the `revisionMode` parameter — you'll see it is now set to `'Multiple'`:
 
 ```bicep
 revisionMode: 'Multiple'
@@ -93,7 +95,7 @@ revisionMode: 'Multiple'
 
 ### Code: Version endpoint
 
-Open `app/business-api/python/account/main.py`. A new endpoint identifies the revision:
+Open `app/business-api/python/account/main.py` — a new `/api/version` endpoint has been added that will be used to identify which revision is currently serving the request:
 
 ```python
 @app.get("/api/version")
@@ -107,6 +109,8 @@ async def get_version():
 
 ## Step 3 – Deploy the Updated Account API
 
+Now that we understand the changes made, let's push them to Azure.
+
 ```bash
 azd up
 ```
@@ -117,6 +121,8 @@ This will:
 3. Create a **new revision** (the old revision from Lab 2 still exists)
 
 ## Step 4 – Verify the New Revision
+
+Let's confirm that the new revision is running by calling the `/api/version` endpoint we just added. This endpoint will tell us which version and revision is currently serving our request.
 
 ```bash
 # Get the Account API URL
@@ -132,6 +138,8 @@ Expected response:
 ```
 
 ## Step 5 – List Revisions
+
+Now let's see all the revisions that exist for the Account API. Since we enabled Multiple revision mode, the previous revision from Lab 2 is still around alongside the new one.
 
 > **Tip:** If you get an error about the `Microsoft.App` provider not being registered, run:
 > ```bash
@@ -154,6 +162,8 @@ az containerapp revision list \
 You should see at least two revisions: the original (from Lab 2) and the new one (with the version endpoint).
 
 ## Step 6 – Split Traffic
+
+This is where the power of Multiple revision mode comes in. Instead of sending all traffic to the new revision right away, we'll do a **canary release** — routing most traffic (80%) to the new revision while keeping a small portion (20%) on the previous one. This lets you test the new version with real traffic while minimizing risk. If something goes wrong, you can quickly shift traffic back.
 
 Distribute traffic: **80%** to the new revision, **20%** to the previous one:
 
@@ -181,7 +191,7 @@ az containerapp ingress traffic set \
 
 ## Step 7 – Test Traffic Splitting
 
-Call the version endpoint multiple times. About 80% of requests should return the version response, and 20% should return a 404 (the old revision doesn't have `/api/version`):
+Call the version endpoint multiple times. About 80% of requests should return the version response, and 20% should return a 404:
 
 ```bash
 for i in {1..10}; do
@@ -191,7 +201,7 @@ for i in {1..10}; do
 done
 ```
 
-You should see a mix of `HTTP 200` and `HTTP 404` responses, roughly in an 80/20 ratio.
+You should see a mix of `HTTP 200` and `HTTP 404` responses, roughly in an 80/20 ratio. The `200` responses come from the **new revision** which has the `/api/version` endpoint, while the `404` responses come from the **old revision** — proving that traffic is being split between the two revisions.
 
 ## Step 8 – Promote the New Revision (100%)
 

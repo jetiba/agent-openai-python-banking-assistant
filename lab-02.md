@@ -48,7 +48,10 @@ This copies the new application code, Bicep modules, and updated configuration f
 
 ### Step 2 – Explore the New APIs Locally
 
-**Transaction API:**
+Before pushing any changes to Azure, let's first run the new services locally to understand what was added and how they work.
+
+**Transaction API** — This service manages the transaction history for each account. It exposes endpoints to retrieve past transactions (deposits, withdrawals, transfers) for a given account ID.
+
 ```bash
 cd app/business-api/python/transaction
 uv sync
@@ -56,7 +59,10 @@ uv run uvicorn main:app --reload --port 8071
 ```
 Open http://localhost:8071/docs – try `GET /api/transactions/1010`.
 
-**Payment API** (requires Transaction API running):
+**Payment API** — This service handles outgoing payments such as bank transfers and bill payments. It depends on the Transaction API to record each payment as a new transaction, which is why the Transaction API must be running first.
+
+Open a **second terminal** (keep the Transaction API running in the first one):
+
 ```bash
 cd app/business-api/python/payment
 uv sync
@@ -79,7 +85,10 @@ Open http://localhost:8072/docs – try `POST /api/payments` with a payment body
 }
 ```
 
-**Frontend** (requires Account, Transaction, and Payment APIs running):
+**Frontend** — Now let's run the banking web application to see how all the APIs come together in a user-facing interface.
+
+Keep both previous terminals running (Transaction API and Payment API), and open a **third terminal**:
+
 ```bash
 cd app/frontend/banking-web
 npm install
@@ -90,6 +99,8 @@ Open http://localhost:5170 – browse Dashboard, Accounts, Payments, and Credit 
 > **Note:** The AI assistant chat widget and Support page require the AI backend (Part 2, Lab 7+). All other pages work without it.
 
 ### Step 3 – Deploy
+
+Now that we have a better understanding of the application structure and how the services interact, let's deploy everything to Azure.
 
 From the **repository root**:
 
@@ -109,6 +120,13 @@ This deploys all four services. The Payment container automatically receives the
 3. Open the **web** Container App's Application URL to access the frontend
 4. Navigate between pages to verify API integrations work
 5. Check each API's `/docs` endpoint for the Swagger UI
+
+6. **Dig deeper — try to answer these questions:**
+   - How many images are stored in the Container Registry now?
+   - How can you notify an external service when a new image is pushed to the registry?
+   - How could you restrict access to specific images in the registry?
+   - How many different container app services are deployed in your environment?
+   - How can you view the logs of your web container app?
 
 ## Key Concepts
 
