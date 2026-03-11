@@ -12,6 +12,6 @@
     "webAuthClientId": { "value": "${WEB_AUTH_CLIENT_ID=}" },
     "webAuthClientSecret": { "value": "${WEB_AUTH_CLIENT_SECRET=}" },
     "backendAppExists": { "value": "${SERVICE_BACKEND_RESOURCE_EXISTS=false}" },
-    "foundryResourceGroupLocation": { "value": "${FOUNDRY_RESOURCE_GROUP_LOCATION=eastus}" }
+    "foundryResourceGroupLocation": { "value": "${FOUNDRY_RESOURCE_GROUP_LOCATION=${AZURE_LOCATION}}" }
   }
 }
