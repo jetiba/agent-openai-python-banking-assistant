@@ -21,12 +21,14 @@
                 "GitHub.vscode-github-actions",
                 "ms-azuretools.azure-dev",
                 "ms-azuretools.vscode-bicep",
-                "amodio.tsl-problem-matcher"
+                "amodio.tsl-problem-matcher",
+                "ms-python.python"
             ]
         }
     },
+    "forwardPorts": [8070, 8071, 8072, 5170],
     "remoteUser": "vscode",
     "hostRequirements": {
-        "memory": "8gb"
+        "memory": "4gb"
     }
 }

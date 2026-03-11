@@ -2,80 +2,9 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "environmentName": {
-      "value": "${AZURE_ENV_NAME}"
-    },
-    "resourceGroupName": {
-      "value": "${AZURE_RESOURCE_GROUP}"
-    },
-    "location": {
-      "value": "${AZURE_LOCATION}"
-    },
-    "openAiServiceName": {
-      "value": "${AZURE_OPENAI_SERVICE}"
-    },
-    "openAiResourceGroupName": {
-      "value": "${AZURE_OPENAI_RESOURCE_GROUP}"
-    },
-    "openAiResourceGroupLocation": {
-      "value": "${AZURE_OPENAI_SERVICE_LOCATION=eastus}"
-    },
-    "openAiSkuName": {
-      "value": "S0"
-    },
-    "documentIntelligenceServiceName": {
-      "value": "${AZURE_DOCUMENT_INTELLIGENCE_SERVICE}"
-    },
-    "documentIntelligenceResourceGroupName": {
-      "value": "${AZURE_DOCUMENT_INTELLIGENCE_RESOURCE_GROUP}"
-    },
-    "documentIntelligenceResourceGroupLocation": {
-      "value": "${AZURE_DOCUMENT_INTELLIGENCE_RESOURCE_GROUP_LOCATION=eastus}"
-    },
-    "documentIntelligenceSkuName": {
-      "value": "S0"
-    },
-    "storageAccountName": {
-      "value": "${AZURE_STORAGE_ACCOUNT}"
-    },
-    "storageResourceGroupName": {
-      "value": "${AZURE_STORAGE_RESOURCE_GROUP}"
-    },
-    "storageSkuName": {
-      "value": "${AZURE_STORAGE_SKU=Standard_LRS}"
-    },
-    "models": {
-      "value": [
-        {
-          "deploymentName": "gpt-4.1",
-          "name": "gpt-4.1",
-          "format": "OpenAI",
-          "version": "2025-04-14",
-          "skuName": "GlobalStandard",
-          "capacity": 80
-        }
-      ]
-    }
-    ,
-    "agentsType": {
-      "value": "foundry_v2"
-    }
-    ,
-    "backendAppExists": {
-      "value": false
-    },
-    "webAppExists": {
-      "value": false
-    },
-    "accountAppExists": {
-      "value": false
-    },
-    "paymentAppExists": {
-      "value": false
-    },
-    "transactionAppExists": {
-      "value": false
-    }
+    "environmentName": { "value": "${AZURE_ENV_NAME}" },
+    "resourceGroupName": { "value": "${AZURE_RESOURCE_GROUP}" },
+    "location": { "value": "${AZURE_LOCATION}" },
+    "accountAppExists": { "value": "${SERVICE_ACCOUNT_RESOURCE_EXISTS=false}" }
   }
-
 }

@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: aca-workshop-lab07
+metadata:
+  template: aca-workshop-lab07
+
+services:
+  account:
+    project: ./app/business-api/python/account
+    host: containerapp
+    language: python
+    docker:
+      path: ./Dockerfile
+  transaction:
+    project: ./app/business-api/python/transaction
+    host: containerapp
+    language: python
+    docker:
+      path: ./Dockerfile
+  payment:
+    project: ./app/business-api/python/payment
+    host: containerapp
+    language: python
+    docker:
+      path: ./Dockerfile
+  backend:
+    project: ./app/backend
+    host: containerapp
+    language: python
+    docker:
+      path: ./Dockerfile
+  web:
+    project: ./app/frontend/banking-web
+    host: containerapp
+    language: js
+    docker:
+      path: ./Dockerfile

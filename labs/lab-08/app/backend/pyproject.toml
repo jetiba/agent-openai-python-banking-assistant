@@ -1,0 +1,41 @@
+[project]
+name = "banking-assistant-backend"
+version = "0.1.0"
+description = "AI agents with Document Intelligence for the banking assistant"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "fastapi[all]==0.116.1",
+    "uvicorn==0.35.0",
+    "httpx==0.28.1",
+    "azure-identity==1.24.0",
+    "azure-storage-blob==12.26.0",
+    "azure-ai-documentintelligence==1.0.1",
+    "dependency-injector==4.48.1",
+    "agent-framework-core==1.0.0rc2",
+    "agent-framework-azure-ai==1.0.0rc2",
+    "agent-framework-orchestrations",
+    "agent-framework-devui",
+    "agent-framework-chatkit",
+    "openai-chatkit==1.4.1",
+    "azure-monitor-opentelemetry",
+    "opentelemetry-semantic-conventions-ai==0.4.13"
+]
+
+[tool.uv]
+prerelease = "if-necessary-or-explicit"
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.4.1",
+    "pytest-asyncio==1.1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
