@@ -162,11 +162,12 @@ Infrastructure (`infra/`), settings, attachment handling, Blob Storage, Document
 
 7. **Deploy:**
    ```bash
-   azd up
+   azd deploy backend
    ```
+   In this lab we only need to deploy the backend since infrastructure and the other application components are unchanged.
 
 8. **Test the multi-agent handoff:**
-   - Ask *"Show me accounts for user john_doe"* — TriageAgent routes to **AccountAgent**.
+   - Ask *"Show details of my account"* — TriageAgent routes to **AccountAgent**.
    - Ask *"What are my recent transactions?"* — TriageAgent routes to **TransactionHistoryAgent**.
    - Ask *"Pay this invoice"* (with an uploaded invoice) — TriageAgent routes to **PaymentAgent**, which scans the document, then shows an **approval widget** before calling `processPayment`.
    - Mid-conversation, switch topics (e.g. from transactions to payments) — the specialist hands back to TriageAgent, which re-routes to the correct agent.

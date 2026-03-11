@@ -105,9 +105,9 @@ param storageSkuName string // Set in main.parameters.json
 // ---- NEW in Lab 8: Document Intelligence ----
 param documentIntelligenceServiceName string = ''
 param documentIntelligenceResourceGroupName string = ''
-// Document Intelligence new REST API available in eastus, westus2, westeurope.
+// Document Intelligence new REST API available in eastus, westus2, westeurope, switzerlandnorth.
 // https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/sdk-overview-v4-0
-@allowed(['eastus', 'westus2', 'westeurope'])
+@allowed(['eastus', 'westus2', 'westeurope', 'switzerlandnorth'])
 param documentIntelligenceResourceGroupLocation string = 'eastus'
 param documentIntelligenceSkuName string = 'S0'
 

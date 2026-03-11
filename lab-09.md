@@ -118,8 +118,8 @@ All other files from Lab 8 carry forward unchanged — triage logic, attachment 
 
 6. **Test:** 
    - Open the web frontend and locate the agent chat at the bottom right of the page.
-   - Ask *"Show my accounts"* — AccountAgent calls `getAccountsByUserName` via MCP and returns real data.
    - Ask *"What are my recent transactions for account 1010?"* — AccountAgent calls `getLastTransactions` via MCP.
+   - Ask *"Who are my registered beneficiaries?"* — AccountAgent calls `getRegisteredBeneficiary` via MCP.
    - Upload an invoice and ask *"Pay this invoice"* — PaymentAgent scans the document, presents the extracted data, and on confirmation calls `processPayment` via MCP.
    - Connect to the Foundry portal: from the [Azure Portal](https://portal.azure.com) > select your Foundry project resource > in the 'Overview' page click on 'Go to Foundry portal' > Build > Agents > select one of the agents created and check:
       - The agent's version (it should be updated) and configuration in the 'Playground'

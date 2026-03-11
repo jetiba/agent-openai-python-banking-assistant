@@ -256,6 +256,16 @@ module foundryAIDeveloperRoleBackend './shared/security/role.bicep' = {
   }
 }
 
+module foundryAIUserRoleBackend './shared/security/role.bicep' = {
+  scope: foundryResourceGroup
+  name: 'foundry-ai-user-role-backend'
+  params: {
+    principalId: backend.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
+    roleDefinitionId: '53ca6127-db72-4b80-b1b0-d745d6d5456d' // AI User
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Account API
 // ---------------------------------------------------------------------------
