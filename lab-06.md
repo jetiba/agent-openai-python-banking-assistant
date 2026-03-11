@@ -137,7 +137,28 @@ This is the key step. `azd pipeline config` will:
 2. Add a **federated credential** that trusts your GitHub repository
 3. Set the required **GitHub repository variables** (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, etc.)
 
-Run:
+### Ensure `origin` Points to Your Repository
+
+`azd pipeline config` reads the **`origin`** remote to determine which GitHub repository to configure. If you forked or cloned from a different repository, `origin` may still point to the original repo.
+
+Check your current remotes:
+
+```bash
+git remote -v
+```
+
+If `origin` does **not** point to your `<your-org>/aca-workshop` repository, update it:
+
+```bash
+git remote set-url origin https://github.com/<your-org>/aca-workshop.git
+```
+
+> **Tip**: If you want to keep a reference to the original repo, add it as a separate remote before changing `origin`:
+> ```bash
+> git remote add upstream https://github.com/<original-org>/<original-repo>.git
+> ```
+
+### Run `azd pipeline config`
 
 ```bash
 azd pipeline config
@@ -286,6 +307,8 @@ This is implemented with three workflow files working together:
 
 ### 7a – Reusable Workflows
 
+These are two GitHub Actions workflows that use `workflow_call` — meaning they **can't run on their own**. They're designed to be invoked by the orchestrator (`app-ci.yaml`) with different inputs for each service. This keeps CI/CD DRY: the build and deploy logic is written once and reused per service. Both workflows authenticate to Azure using **OIDC federated credentials** (secretless — no stored passwords), enabled by the `id-token: write` permission.
+
 **`.github/workflows/acr-build-push.yaml`** — Builds a Docker image and pushes it to ACR:
 
 ```yaml
@@ -320,6 +343,8 @@ Steps:
 
 ### 7b – The Orchestrator: `app-ci.yaml`
 
+This is the main CI/CD pipeline that ties everything together. Instead of rebuilding and redeploying all services on every push, it **detects which services have changed files** and only triggers the build/deploy reusable workflows for those services. This makes deployments faster and more efficient — if you only changed the account API, only the account API gets rebuilt and redeployed while everything else is skipped.
+
 Open `.github/workflows/app-ci.yaml`. This is the main CI/CD pipeline that ties everything together:
 
 **Change Detection** — Uses `dorny/paths-filter@v2` to detect which services have file changes:
@@ -351,7 +376,7 @@ deploy-account-app:
   # ...
 ```
 
-**Environment Variables** — The per-service pipeline requires additional GitHub repository variables. Set these in **Settings** → **Secrets and variables** → **Actions** → **Variables**:
+**Environment Variables** — The per-service pipeline requires additional GitHub repository variables. These must be configured **on your GitHub repository** (not locally). Go to your repository on GitHub, then navigate to **Settings** → **Secrets and variables** → **Actions** → **Variables** tab, and add each of the following:
 
 | Variable | Description | Example |
 |----------|-----------|---------|
