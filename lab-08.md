@@ -114,7 +114,7 @@
    - Ask the agent a general banking question (e.g., "What is a savings account?", "How interest works on accounts?", "Can you help me with tips on budgeting?"). The agent responds conversationally. 
    - Upload an invoice image (you can find some samples in [data](./data)) and ask "Help me pay this bill" or "Scan this invoice for me", the request will be routed to PaymentAgent, which calls `scan_invoice` and presents extracted fields. 
    - Note that the agent is not connected to the Payment API deployed before, so it cannot proceed with the payment – that will come in the next labs!
-   - Connect to the Foundry portal: from the [Azure Portal](https://portal.azure.com) > select your Foundry project resource > in the 'Overview' page click on 'Go to Foundry portal' > Build > Agents > select 'Payment Agent'. Check:
+   - Connect to the Foundry portal: from the [Azure Portal](https://portal.azure.com) > select your Foundry project resource > in the 'Overview' page click on 'Go to Foundry portal' > switch to new Foundry mode on the top of the page > Build > Agents > select 'Payment Agent'. Check:
       - The agent's version and configuration in the 'Playground'
       - The agent's execution traces, in the tab 'Traces'. Each message has a conversation ID, if you click on that you can see the entire history for the conversation.
       - Note the tool invocations in the conversation details, which show calls to `scan_invoice` with the attachment ID, and the tool output with the extracted invoice fields.
