@@ -130,58 +130,42 @@ git push origin lab/workshop
 
 > **Important**: The workflows need to be in the repository's default branch (or the branch you're working on) to be discovered by GitHub Actions.
 
-## Step 3 – Configure Federated Credentials with `azd pipeline config`
+## Step 3 – Configure OIDC Authentication with an Existing Service Principal
 
-This is the key step. `azd pipeline config` will:
-1. Create (or reuse) a **service principal** in Azure Entra ID
-2. Add a **federated credential** that trusts your GitHub repository
-3. Set the required **GitHub repository variables** (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, etc.)
+A **service principal** is already available in Azure Entra ID with the necessary permissions:
+- **Contributor** on the resource group — for `azd provision` and `azd deploy`
+- **AcrPush** on the Azure Container Registry — for the per-service Docker build/push pipeline. 
 
-### Ensure `origin` Points to Your Repository
+You need to:
+1. Add a **federated credential** so GitHub Actions can authenticate as that service principal via OIDC (no secrets)
+2. Create a **GitHub Environment** and set the required variables there
 
-`azd pipeline config` reads the **`origin`** remote to determine which GitHub repository to configure. If you forked or cloned from a different repository, `origin` may still point to the original repo.
+### 3a – Add a Federated Credential on the Service Principal
 
-Check your current remotes:
+The workflows use a GitHub Environment named **msevent**. The federated credential must reference this environment in its subject.
+For updating the service principal with a federated credential:
 
-```bash
-git remote -v
-```
+// TODO @fabrice: add the steps that the attendees must complete from the event portal
 
-If `origin` does **not** point to your `<your-org>/aca-workshop` repository, update it:
+> The CI/CD workflows reference a GitHub Environment (`msevent`), and GitHub includes the environment name in the OIDC token's `subject` claim. Azure Entra ID matches this subject to decide whether to trust the token. Using environment-scoped credentials is more secure than branch-scoped ones because GitHub Environments can enforce protection rules (approvals, wait timers, etc.).
 
-```bash
-git remote set-url origin https://github.com/<your-org>/aca-workshop.git
-```
+### 3b – Create a GitHub Environment and Set Variables
 
-> **Tip**: If you want to keep a reference to the original repo, add it as a separate remote before changing `origin`:
-> ```bash
-> git remote add upstream https://github.com/<original-org>/<original-repo>.git
-> ```
+1. Go to your GitHub repository → **Settings** → **Environments** → **New environment**
+2. Name it **`msevent`** and click **Configure environment**
+3. Under **Environment variables**, add the following:
 
-### Run `azd pipeline config`
+| Variable | Description | How to find it |
+|----------|-------------|----------------|
+| `AZURE_CLIENT_ID` | Service principal's Application (client) ID | in the event portal |
+| `AZURE_TENANT_ID` | Your Azure AD tenant ID | in the event portal |
+| `AZURE_SUBSCRIPTION_ID` | Your Azure subscription ID | in the event portal |
+| `AZURE_ENV_NAME` | The azd environment name | `azd env list` |
+| `AZURE_LOCATION` | The Azure region (e.g., `eastus2`) | `azd env get-values \| grep AZURE_LOCATION` |
+| `AZURE_RESOURCE_GROUP` | Resource group name | `azd env get-values \| grep AZURE_RESOURCE_GROUP` |
+| `ACR_NAME` | Container Registry name (without `.azurecr.io`) | `azd env get-values \| grep AZURE_CONTAINER_REGISTRY_NAME` |
+| `RESOURCE_GROUP` | Resource group name (used by per-service pipeline) | Same as `AZURE_RESOURCE_GROUP` |
 
-```bash
-azd pipeline config
-```
-
-Follow the prompts:
-- Select your Azure subscription
-- Confirm the GitHub repository
-- Choose the authentication type → select **Federated (OIDC)**
-
-When it completes, verify the variables were created in your GitHub repository:
-
-1. Go to your GitHub repository → **Settings** → **Secrets and variables** → **Actions**
-2. Click the **Variables** tab
-3. You should see:
-
-| Variable | Description |
-|----------|-------------|
-| `AZURE_CLIENT_ID` | Service principal's client (application) ID |
-| `AZURE_TENANT_ID` | Your Azure AD tenant ID |
-| `AZURE_SUBSCRIPTION_ID` | Your Azure subscription ID |
-| `AZURE_ENV_NAME` | The azd environment name |
-| `AZURE_LOCATION` | The Azure region |
 
 ### Understanding OIDC Federation
 
@@ -202,7 +186,7 @@ Unlike traditional service principal authentication (which stores a client secre
 
 - **No secrets stored in GitHub** — the OIDC token is requested fresh for each workflow run
 - **Short-lived** — tokens expire after the workflow completes
-- **Scoped** — the federated credential only trusts tokens from your specific repository and branch
+- **Scoped** — the federated credential only trusts tokens from your specific repository and environment
 
 ## Step 4 – Review the azd Workflow
 
@@ -220,6 +204,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: msevent  # Uses the GitHub Environment for variables + OIDC
     steps:
       - uses: actions/checkout@v4
       - uses: Azure/setup-azd@v2
@@ -239,8 +224,7 @@ Key points:
 
 | Element | Purpose |
 |---------|---------|
-| `workflow_dispatch` | Allows manual triggering from the GitHub Actions UI |
-| `permissions.id-token: write` | Enables the runner to request an OIDC token from GitHub |
+| `workflow_dispatch` | Allows manual triggering from the GitHub Actions UI || `environment: msevent` | Binds the job to the GitHub Environment where variables and OIDC trust are configured || `permissions.id-token: write` | Enables the runner to request an OIDC token from GitHub |
 | `Azure/setup-azd@v2` | Installs the Azure Developer CLI on the runner |
 | `azd auth login --federated-credential-provider "github"` | Authenticates using the OIDC token — no secrets needed |
 | `azd provision --no-prompt` | Provisions all infrastructure defined in `infra/main.bicep` |
@@ -376,7 +360,7 @@ deploy-account-app:
   # ...
 ```
 
-**Environment Variables** — The per-service pipeline requires additional GitHub repository variables. These must be configured **on your GitHub repository** (not locally). Go to your repository on GitHub, then navigate to **Settings** → **Secrets and variables** → **Actions** → **Variables** tab, and add each of the following:
+**Environment Variables** — The per-service pipeline requires additional variables on the **msevent** GitHub Environment (the same environment you created in Step 3c). Go to your repository on GitHub → **Settings** → **Environments** → **msevent** → **Environment variables**, and add the following (if not already set in Step 3c):
 
 | Variable | Description | Example |
 |----------|-----------|---------|

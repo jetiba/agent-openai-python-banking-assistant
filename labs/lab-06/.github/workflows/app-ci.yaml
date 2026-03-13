@@ -47,17 +47,17 @@ jobs:
         run: |
           echo "checking branch name [${{ github.ref_name }}]"
           if [[ ${{ github.ref_name }} == 'main' ]]; then
-              echo "main branch detected. Set Development environment"
-              echo "DEPLOY_ENVIRONMENT=Development" >> "$GITHUB_OUTPUT"
+              echo "main branch detected. Set msevent environment"
+              echo "DEPLOY_ENVIRONMENT=msevent" >> "$GITHUB_OUTPUT"
           elif [[ ${{ github.ref_name }} == *'release'* ]]; then
-              echo "release branch detected. Set Test environment"
-              echo "DEPLOY_ENVIRONMENT=Test" >> "$GITHUB_OUTPUT"
+              echo "release branch detected. Set msevent environment"
+              echo "DEPLOY_ENVIRONMENT=msevent" >> "$GITHUB_OUTPUT"
           elif [[ ${{ github.ref_name }} == *'v'* ]]; then
-              echo "tag detected. Set Production environment"
-              echo "DEPLOY_ENVIRONMENT=Production" >> "$GITHUB_OUTPUT"
+              echo "tag detected. Set msevent environment"
+              echo "DEPLOY_ENVIRONMENT=msevent" >> "$GITHUB_OUTPUT"
           else
-              echo "branch not detected. Set Development environment as default"
-              echo "DEPLOY_ENVIRONMENT=Development" >> "$GITHUB_OUTPUT"
+              echo "branch not detected. Set msevent environment as default"
+              echo "DEPLOY_ENVIRONMENT=msevent" >> "$GITHUB_OUTPUT"
           fi
 
   # ── Account API ──────────────────────────────────────────────
