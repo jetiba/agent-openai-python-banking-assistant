@@ -143,9 +143,25 @@ You need to:
 ### 3a – Add a Federated Credential on the Service Principal
 
 The workflows use a GitHub Environment named **msevent**. The federated credential must reference this environment in its subject.
-For updating the service principal with a federated credential:
 
-// TODO @fabrice: add the steps that the attendees must complete from the event portal
+To register your GitHub repository and obtain the required Entra ID credentials:
+
+1. Open the **event portal** using the address and credentials provided by the instructor
+2. Locate the **Setup Github Repo** action in the modules list
+3. Execute the action by providing your repository name
+
+   > **Important**: Follow the exact format specified in the portal — any deviation will cause the setup to fail.
+
+4. Wait for the process to complete — you can monitor its progress in the portal
+5. Once finished, go to **Completed modules** → expand **Setup Github Repo**
+6. Copy the following values — you will need them in the next steps:
+
+   | Value | Description |
+   |-------|-------------|
+   | `AZURE_CLIENT_ID` | Service principal's Application (client) ID |
+   | `AZURE_TENANT_ID` | Your Azure AD tenant ID |
+   | `AZURE_SUBSCRIPTION_ID` | Your Azure subscription ID |
+
 
 > The CI/CD workflows reference a GitHub Environment (`msevent`), and GitHub includes the environment name in the OIDC token's `subject` claim. Azure Entra ID matches this subject to decide whether to trust the token. Using environment-scoped credentials is more secure than branch-scoped ones because GitHub Environments can enforce protection rules (approvals, wait timers, etc.).
 
