@@ -87,7 +87,7 @@
 ### Frontend (`app/frontend/banking-web/`)
 - **`nginx/nginx.conf.template`** – Two new location blocks: `/upload` and `/preview` proxied to the backend, with `client_max_body_size 10m` for file uploads.
 
-## Steps
+## Step 1 - Apply the Lab Delta and Deploy
 
 1. **Apply the lab delta:**
    ```bash
@@ -109,7 +109,13 @@
    azd up
    ```
 
-6. **Test:** 
+## Step 2 - Review the deployment and Test the New Capabilities
+
+1. **Verify in the Azure Portal**
+   - Check the new Storage Account and Document Intelligence resources.
+   - In the Foundry portal, verify that both AccountAgent and PaymentAgent are present with their respective configurations.
+
+2. **Test the chat and attachment upload**
    - Connect to the web frontend URL (you can find it in the Azure portal under the frontend Container App) and locate the chat at the bottom right of the page. 
    - Ask the agent a general banking question (e.g., "What is a savings account?", "How interest works on accounts?", "Can you help me with tips on budgeting?"). The agent responds conversationally. 
    - Upload an invoice image (you can find some samples in [data](./data)) and ask "Help me pay this bill" or "Scan this invoice for me", the request will be routed to PaymentAgent, which calls `scan_invoice` and presents extracted fields. 
@@ -119,6 +125,17 @@
       - The agent's execution traces, in the tab 'Traces'. Each message has a conversation ID, if you click on that you can see the entire history for the conversation.
       - Note the tool invocations in the conversation details, which show calls to `scan_invoice` with the attachment ID, and the tool output with the extracted invoice fields.
       - Traces are not enabled because App Insights is not configured, but you can enable them in the Foundry portal and then check the telemetry in Azure Monitor.
+
+## Key Takeaways:
+
+- **Azure Document Intelligence** turns unstructured documents (invoices, receipts, PDFs) into structured JSON using pre-built models like `prebuilt-invoice` — no custom training required.
+- **The `@tool` decorator** is how you give agents real capabilities: a single decorated Python method becomes an LLM-callable tool that the agent invokes autonomously when it determines the tool is needed.
+- **Two-phase upload protocol** (get URL → POST bytes) cleanly separates file transfer from chat messaging, keeping the SSE stream lightweight while storing files durably in Azure Blob Storage.
+- **Simple triage** demonstrates that you don't always need a complex orchestrator — a keyword + attachment heuristic is enough to route messages to the right specialist agent at this stage.
+- **Each agent is independently managed** in Azure AI Foundry: AccountAgent and PaymentAgent are separate resources with their own versions, instructions, tools, and traces — making them easy to iterate on independently.
+- **RBAC secures every service boundary**: the backend's managed identity gets *Storage Blob Data Contributor* on the Storage Account and *Cognitive Services User* on Document Intelligence — no connection strings or API keys in code.
+- **Tool output flows back into the conversation**: the LLM sees the JSON returned by `scan_invoice` and formats a human-readable summary, showing how agents combine tool results with natural language generation.
+- **Foundry traces capture tool invocations** end-to-end — you can inspect exactly which tools the agent called, what inputs it passed, and what outputs it received, invaluable for debugging and auditing.
 
 ## Next Steps 
 Continue with **[Lab 9: Business APIs Integration as MCP Servers](lab-09.md)** to integrate business APIs and extend the capabilities of your agents.

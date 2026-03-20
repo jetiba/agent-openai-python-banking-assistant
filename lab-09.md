@@ -98,7 +98,7 @@ All other files from Lab 8 carry forward unchanged — triage logic, attachment 
 | payment-api | `processPayment` | Execute a payment with amount, recipient, and account details |
 | *(local)* | `scan_invoice` | Extract structured invoice data from an uploaded document |
 
-## Steps
+## Step 1 - Apply the Lab Delta and Deploy
 
 1. **Apply the lab delta:**
    ```bash
@@ -109,14 +109,16 @@ All other files from Lab 8 carry forward unchanged — triage logic, attachment 
 
 3. **Review the payment agent update** in `app/backend/app/agents/payment_agent.py` — note how the local `scan_invoice` tool and the `payment-api` MCP tool coexist in a single tool list.
 
-4. **Inspect the infrastructure** in `infra/main.bicep` — find the three new `*_MCP_URL` environment variables on the backend module that bridge the Container App FQDNs to MCP endpoints.
+4. **Review how the MCP server is configure for the Buiness APIs** in `app/business-api/python/payment/mcp_tools.py` and `app/business-api/python/payment/main.py` — the MCP servers are implemented with FastMCP, which exposes the tools defined in `mcp_tools.py` at the `/mcp` endpoint of the Container App.
 
-5. **Deploy:**
+5. **Inspect the infrastructure** in `infra/main.bicep` — find the three new `*_MCP_URL` environment variables on the backend module that bridge the Container App FQDNs to MCP endpoints.
+
+6. **Deploy:**
    ```bash
    azd up
    ```
 
-6. **Test:** 
+## Step 2 - Test the New Capabilities
    - Open the web frontend and locate the agent chat at the bottom right of the page.
    - Ask *"What are my recent transactions for account 1010?"* — AccountAgent calls `getLastTransactions` via MCP.
    - Ask *"Who are my registered beneficiaries?"* — AccountAgent calls `getRegisteredBeneficiary` via MCP.
@@ -126,6 +128,15 @@ All other files from Lab 8 carry forward unchanged — triage logic, attachment 
       - The agent's execution traces, in the tab 'Traces'. Each message has a conversation ID, if you click on that you can see the entire history for the conversation.
       - Note the tool invocations in the conversation details, which show calls to the MCP server.
       - Traces are not enabled because App Insights is not configured, but you can enable them in the Foundry portal and then check the telemetry in Azure Monitor.
+
+## Key takeaways
+- **MCP standardises tool integration**: instead of writing custom HTTP clients for each API, you point an `MCPStreamableHTTPTool` at a `/mcp` endpoint and the agent automatically discovers all available tools — adding or changing API tools requires zero backend code changes.
+- **Dynamic tool discovery** means the agent always sees the latest tool schemas from each MCP server at connection time, eliminating version drift between the agent and its APIs.
+- **Local and MCP tools mix seamlessly**: PaymentAgent's tool list contains both the local `scan_invoice` Python tool and the remote `payment-api` MCP tool — the SDK manages both lifecycles transparently.
+- **Agents gain real data access** without becoming tightly coupled to APIs: AccountAgent can query accounts, beneficiaries, credit cards, and transactions through MCP, yet knows nothing about the underlying REST endpoints or data models.
+- **The business APIs remain unchanged** — the FastMCP servers exposed in earlier labs now serve as the tool backbone for AI agents, demonstrating how MCP bridges traditional microservices and AI agent architectures.
+- **Foundry traces now show MCP tool calls** end-to-end, letting you inspect which MCP tools the agent selected, what parameters it passed, and what data came back — critical for debugging multi-tool conversations.
+
 
 ## Next Steps 
 Continue with **[Lab 10: Business APIs Integration as MCP Servers](lab-10.md)** to integrate business APIs and extend the capabilities of your agents.

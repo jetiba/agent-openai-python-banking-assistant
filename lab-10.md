@@ -137,7 +137,7 @@ Infrastructure (`infra/`), settings, attachment handling, Blob Storage, Document
 | payment-api | `processPayment` | Execute a payment (**requires approval**) |
 | *(local)* | `scan_invoice` | Extract structured invoice data from an uploaded document |
 
-## Steps
+## Step 1 - Review the Code Changes and deploy
 
 1. **Apply the lab delta:**
    ```bash
@@ -166,8 +166,16 @@ Infrastructure (`infra/`), settings, attachment handling, Blob Storage, Document
    ```
    In this lab we only need to deploy the backend since infrastructure and the other application components are unchanged.
 
-8. **Test the multi-agent handoff:**
+## Step 2 - Test the multi-agent handoff
    - Ask *"Show details of my account"* — TriageAgent routes to **AccountAgent**.
    - Ask *"What are my recent transactions?"* — TriageAgent routes to **TransactionHistoryAgent**.
    - Ask *"Pay this invoice"* (with an uploaded invoice) — TriageAgent routes to **PaymentAgent**, which scans the document, then shows an **approval widget** before calling `processPayment`.
    - Mid-conversation, switch topics (e.g. from transactions to payments) — the specialist hands back to TriageAgent, which re-routes to the correct agent.
+
+## Key Takeaways
+
+- **HandoffBuilder enables declarative multi-agent orchestration**: you register participants and define routing rules, and the framework handles turn-taking, context passing, and checkpointing — no manual state machine required.
+- **Triage + specialist pattern** cleanly separates concerns: the TriageAgent owns classification only (no tools), while each specialist agent holds the minimum set of MCP servers for its domain, reducing scope and improving accuracy.
+- **Bidirectional handoff** keeps conversations fluid: specialists can hand back to TriageAgent when the topic changes, enabling natural multi-topic conversations without restarting the session.
+- **Human-in-the-loop approval** via `approval_mode` adds a safety gate to sensitive operations: `processPayment` emits an approval widget instead of executing immediately, letting the user review and confirm before money moves.
+- **Agent splitting improves tool precision**: giving AccountAgent only account tools and TransactionHistoryAgent only transaction tools reduces the LLM's tool selection space, leading to more accurate and predictable tool calls.

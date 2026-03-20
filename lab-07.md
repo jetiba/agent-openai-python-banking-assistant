@@ -40,12 +40,9 @@
 
 | Concept | Description |
 |---------|-------------|
-| **Azure AI Foundry** | A managed Azure service (`Microsoft.CognitiveServices/accounts` with `allowProjectManagement`) that hosts AI projects, model deployments, and endpoints. |
+| **Azure AI Foundry** | A managed Azure service that hosts AI projects, model deployments, and endpoints. |
 | **AI Foundry Project** | A child resource of the Foundry account that groups models, data, and configuration for a specific workload. |
-| **Agent Framework SDK** | Microsoft's `agent-framework-core` and `agent-framework-azure-ai` Python packages for building AI agents with streaming support. |
-| **AzureAIProjectAgentProvider** | The Foundry v2 client from `agent_framework.azure` that connects to an AI project endpoint and provides agent creation and execution. |
-| **ChatKit Protocol** | A server-sent events (SSE) streaming protocol implemented by `agent-framework-chatkit` that the banking web frontend uses to communicate with the backend. |
-| **RBAC** | Role-Based Access Control – the backend's managed identity is granted *Cognitive Services User* and *AI Developer* roles on the Foundry resource. |
+| **Agent Framework SDK** | Microsoft's framework for building and orchestrating AI agents. |
 
 ## What's New in This Lab
 
@@ -67,7 +64,7 @@
 ### Configuration
 - **`azure.yaml`** – Adds `backend` as a 5th service.
 
-## Steps
+## Step 1 - Apply the Lab Delta and Deploy
 
 1. **Apply the lab delta:**
    ```bash
@@ -82,8 +79,18 @@
    ```bash
    azd up
    ```
+## Step 2 - Verify and Test
+1. **Verify in the Azure Portal**
+   - In the Azure Portal, select your resource group and check the new resources created: Foundry account, Foundry project, backend Container App
+   - select the Foundry project > in the Overview page click on "Go to Foundry portal" > take a quick tour of the Foundry portal
+      - in the Home page you can see the project endpoints, recent activity, and quick links to resources
+      - in the Discover page you can see the model and tool catalogs
+      - in the Build page check
+         - Agents: see the "Account Agent" created by the backend's agent provider, the version of the agent should be '1'. Click on the agent and review the configuration (system prompt and model settings) in the Playground tab
+         - Models: see the GPT-4.1 deployment
+      - in the Operations page you can see an overview of agents metrics, the full list of the agents created in the project, access the quota settings for reviewing the limits and asking for quota increases, and in Admin page you can review the role assignments and add new users to the project
 
-5. **Test:** 
+2. **Test:** 
     - Connect to the web frontend URL (you can find it in the Azure portal under the frontend Container App) and locate the chat at the bottom right of the page. 
     - Ask the agent a general banking question (e.g., "What is a savings account?", "How interest works on accounts?", "Can you help me with tips on budgeting?"). The agent responds conversationally. 
     - Connect to the Foundry portal: from the [Azure Portal](https://portal.azure.com) > select your Foundry project resource > in the 'Overview' page click on 'Go to Foundry portal' > switch to new Foundry mode on the top of the page > Build > Agents > select 'Account Agent'. Check:
@@ -91,6 +98,16 @@
         - The agent's execution traces, in the tab 'Traces'. Each message has a conversation ID, if you click on that you can see the entire history for the conversation.
         - Traces are not enabled because App Insights is not configured, but you can enable them in the Foundry portal and then check the telemetry in Azure Monitor.
     - Note that this is a simple prompt agent and it has no tools yet, so it cannot look up real account data or interact with the transaction/payment APIs – that will come in the next labs!
+
+## Key takeaways:
+   - **Azure AI Foundry** provides a managed control plane for AI projects – you provision a Foundry account, create a project, and deploy models (e.g., GPT-4.1) entirely through Bicep, keeping your AI infrastructure reproducible and version-controlled.
+   - **Agent Framework SDK** decouples agent logic from transport: `AzureAIProjectAgentProvider` handles model communication while `agent-framework-chatkit` handles SSE streaming to the frontend – you write agent instructions, not plumbing code.
+   - **Managed Identity + RBAC** eliminates API keys: the backend Container App authenticates to Foundry via its user-assigned managed identity with *Azure AI User* and *Azure AI Developer* roles, following zero-trust best practices.
+   - **Conversation history is managed server-side** by Azure AI Foundry (threads), so the backend stays stateless and horizontally scalable – only lightweight thread metadata is kept in-memory.
+   - **ChatKit protocol** (SSE-based) gives the frontend real-time token streaming out of the box; the nginx reverse-proxy on the frontend simply forwards `/chatkit` requests to the backend.
+   - **Foundry portal observability** lets you inspect deployed agents, review their configuration, view execution traces, and manage quotas – all without touching code.
+   - A **prompt-only agent** (no tools) is useful for validating the end-to-end pipeline before adding complexity; tools for real data access come in subsequent labs.
+
 
 ## Next Steps 
 Continue with **[Lab 8: Document Intelligence & Invoice scan tool](lab-08.md)** to add a new agent with a Document Intelligence tool, and connect it to the frontend for file upload and scanning capabilities!
